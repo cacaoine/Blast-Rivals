@@ -176,6 +176,36 @@
   .cos-for{color:var(--dim); font-size:11px; letter-spacing:.5px; text-transform:uppercase;}
   .cos-desc{color:var(--dim); font-size:11.5px; line-height:1.4;}
   .cos .wbtn{padding:8px; font-size:12.5px; margin-top:0;}
+  /* ---------- name tags, chat, server browser ---------- */
+  #tags{position:absolute; inset:0; overflow:hidden;}
+  .tag3d{position:absolute; transform:translate(-50%,-100%); display:flex; flex-direction:column; align-items:center; gap:3px; pointer-events:none;
+    will-change:transform; white-space:nowrap;}
+  .tag3d .tn{font-family:Rubik,sans-serif; font-weight:700; font-size:13px; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.9), 0 0 8px rgba(0,0,0,.6);}
+  .tag3d .th{width:56px; height:5px; border-radius:3px; background:rgba(0,0,0,.55); overflow:hidden; border:1px solid rgba(0,0,0,.4);}
+  .tag3d .th i{display:block; height:100%; background:#4ade80;}
+  .tag3d .th i.low{background:var(--bad);}
+  #chatbox{position:absolute; left:18px; bottom:96px; width:min(360px,70vw); pointer-events:auto;}
+  #chat-in{width:100%; background:rgba(16,20,28,.9); border:1px solid var(--accent); border-radius:8px; color:var(--text); padding:9px 12px;
+    font-family:Rubik,sans-serif; font-size:14px;}
+  #chat-in:focus{outline:none; box-shadow:0 0 0 3px rgba(255,122,47,.25);}
+  #chat-hint{position:absolute; left:18px; bottom:96px; font-size:11px; color:rgba(232,236,244,.55); letter-spacing:.5px;}
+  .feeditem.chat{border-left-color:var(--own);}
+  .feeditem.chat b{color:var(--own);}
+  .gl-chat{height:120px; overflow-y:auto; background:rgba(10,13,19,.5); border:1px solid var(--line); border-radius:10px; padding:8px 10px;
+    text-align:left; font-size:12.5px; display:flex; flex-direction:column; gap:3px;}
+  .gl-chat div b{color:var(--own);}
+  .gl-chat .sys{color:var(--dim); font-style:italic;}
+  .gl-chatrow{display:flex; gap:6px;}
+  .gl-chatrow input{flex:1; background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:8px 10px; font-family:Rubik,sans-serif; font-size:13px;}
+  .gl-chatrow input:focus{outline:2px solid var(--accent);}
+  .srv{display:flex; flex-direction:column; gap:6px;}
+  .srv-row{display:flex; align-items:center; gap:10px; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:12.5px;}
+  .srv-row .code{font-family:'Russo One',Rubik,sans-serif; letter-spacing:3px; color:var(--own); min-width:64px;}
+  .srv-row .meta{flex:1; color:var(--dim); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .srv-row .meta b{color:var(--text);}
+  .srv-row .st{font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--dim);}
+  .srv-row .st.live{color:var(--accent2);}
+  .srv-empty{font-size:12px; color:var(--dim); padding:6px 2px;}
   /* ---------- game lobby (host screen) ---------- */
   .gamelobby{z-index:35; justify-content:center; background:rgba(10,13,19,.58); backdrop-filter:blur(2px);}
   .gl-card{width:min(560px,100%); background:rgba(26,33,48,.96); border:1px solid var(--line); border-radius:18px; padding:24px 24px 20px;
@@ -552,13 +582,16 @@
   <div class="gl-card">
     <div class="gl-eyebrow">Game ID — share it with your rivals</div>
     <div class="gl-code" id="gl-code">----</div>
-    <div class="gl-share">Rivals go to <b id="gl-url"></b>, log in, choose <b>Multiplayer</b> and type this code.</div>
+    <div class="gl-share">Rivals go to <b id="gl-url"></b>, log in, choose <b>Multiplayer</b> and type this code — or send them the invite link.</div>
     <div class="gl-row"><span>Map: <b id="gl-map"></b></span><select id="gl-mapsel" hidden></select></div>
     <div class="gl-players" id="gl-players"></div>
     <div class="gl-status" id="gl-status"></div>
+    <div class="gl-chat" id="gl-chat"></div>
+    <div class="gl-chatrow"><input id="gl-chat-in" maxlength="120" placeholder="Chat with your rivals…" autocomplete="off"><button class="abtn" id="gl-chat-send">Send</button></div>
     <div class="btnrow">
       <button class="obtn primary" id="gl-start">Start game</button>
       <button class="obtn" id="gl-copy">Copy code</button>
+      <button class="obtn" id="gl-link">Copy invite link</button>
       <button class="obtn" id="gl-leave">Leave game</button>
     </div>
   </div>
@@ -576,7 +609,10 @@
   <div class="hudpanel" id="score-box"><span class="you" id="s-you">0</span><span class="goal">FIRST TO 10</span><span class="foe" id="s-foe">0</span></div>
   <div class="hudpanel" id="bomb-box"><small>bombs</small>💣 <span id="bomb-n">0</span></div>
   <div class="hudpanel" id="board" hidden></div>
+  <div id="tags"></div>
   <div id="feed"></div>
+  <div id="chat-hint" hidden>Press <b>Enter</b> to chat</div>
+  <div id="chatbox" hidden><input id="chat-in" maxlength="120" placeholder="Say something… (Enter to send, Esc to close)" autocomplete="off"></div>
   <div id="slots"></div>
 </div>
 
@@ -1003,6 +1039,7 @@ async function fbLogout(){
   try{ await fbAuth.signOut(); }catch(e){}
 }
 let signupBody=null, fbWasIn=false;
+let pendingJoin=(new URLSearchParams(location.search).get('join')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4)||null;
 async function fbOnUser(user){
   fbUser=user;
   if(profileUnsub){ profileUnsub(); profileUnsub=null; }
@@ -1016,6 +1053,7 @@ async function fbOnUser(user){
     if(signupBody){ const body=signupBody; signupBody=null; await fbDocRef().set(body); resetSave(); mergeProfile(body); }
     else { const snap=await fbDocRef().get(); resetSave(); if(snap.exists) mergeProfile(snap.data()); }   // the account replaces local data
     persist(); refreshLobbyFromSave(); setAcct('fb-in'); subscribeProfile();
+    if(pendingJoin && rtdb){ const code=pendingJoin; pendingJoin=null; save.mode='mp'; persist(); renderModes(); await joinRoom(code); }
   }catch(e){ setAcct('error'); }
 }
 /* ---- dedicated sign-in page ---- */
@@ -1904,7 +1942,7 @@ function makeRtdbRoom(){
   return {
     kind:'rtdb',
     connected(){ return !!net.code; },
-    presence(patch){ Object.assign(net.pending,patch); if(net.code && !net.flushTimer) net.flushTimer=setTimeout(flushPresence,80); return Promise.resolve(); },
+    presence(patch){ Object.assign(net.pending,patch); if(net.code && !net.flushTimer) net.flushTimer=setTimeout(flushPresence,50); return Promise.resolve(); },
     peers(){ return net.peersList; },
     onPeers(cb){ net.peerCbs.push(cb); return ()=>{ net.peerCbs=net.peerCbs.filter(f=>f!==cb); }; },
     emit(topic,data){ if(!net.eventsRef) return Promise.resolve();
@@ -1999,7 +2037,7 @@ function showGameLobby(){
   if(!net.code) return;
   $('lobby').style.display='none'; $('end').style.display='none'; $('pause').style.display='none';
   $('gamelobby').style.display='flex';
-  startPreview(net.map); renderGameLobby();
+  startPreview(net.map); renderGameLobby(); renderLobbyChat();
 }
 function hideGameLobby(){ $('gamelobby').style.display='none'; stopPreview(); }
 function renderGameLobby(){
@@ -2050,6 +2088,7 @@ function hostStart(){
   net.ref.child('match').set({state:'playing', startAt:Date.now()+3500, round:(net.match.round||0)+1, by:net.sid}).catch(()=>{});
 }
 $('gl-start').onclick=hostStart;
+$('gl-link').onclick=async ev=>{ try{ await navigator.clipboard.writeText(`${location.origin}${location.pathname}?join=${net.code||''}`); ev.target.textContent='Link copied!'; setTimeout(()=>{ ev.target.textContent='Copy invite link'; },1400); }catch(e){} };
 $('gl-copy').onclick=async ev=>{ try{ await navigator.clipboard.writeText(net.code||''); ev.target.textContent='Copied!'; setTimeout(()=>{ ev.target.textContent='Copy code'; },1200); }catch(e){} };
 $('gl-leave').onclick=async()=>{ hideGameLobby(); await leaveRoom(); $('lobby').style.display='flex'; };
 function renderBoard(){
@@ -2086,13 +2125,27 @@ async function quickMatch(){
   await createRoom(); return !!net.code;
 }
 window.addEventListener('beforeunload',()=>{ if(net.code && net.playersRef && net.sid) net.playersRef.child(net.sid).remove(); });
+let roomList=[], roomListTimer=null;
+async function refreshRoomList(){
+  if(!rtdb || !fbUser || net.code) return;
+  try{
+    const snap=await rtdb.ref('rooms').orderByChild('createdAt').limitToLast(20).get();
+    const v=snap.val()||{}, now=Date.now();
+    roomList=Object.keys(v).map(c=>{ const r=v[c]; const ps=r.players?Object.values(r.players):[]; const host=ps.slice().sort((a,b)=>(+a.t||0)-(+b.t||0))[0];
+        return {code:c, map:r.map, n:ps.length, host:host?String(host.name||'').slice(0,14):'', live:r.match&&r.match.state==='playing', createdAt:+r.createdAt||0}; })
+      .filter(r=>r.n>0 && r.n<8 && now-r.createdAt<3*3600*1000).sort((a,b)=>b.n-a.n);
+  }catch(e){ roomList=[]; }
+  renderMpCard();
+}
 function renderMpCard(){
   const el=$('mp-panel'); if(!el) return;
   const online=room && room.kind==='rtdb';
   el.hidden=!(online && save.mode==='mp');
   if(el.hidden){ mpSig=''; return; }
   // only rebuild when something visible changed, so typing in the code box is never interrupted
-  const sig=[fbUser?fbUser.uid:'', net.code, net.map, save.map, mpMsg, net.peersList.map(p=>p.peer+':'+peerName(p.peer)+':'+(p.presence&&p.presence.playing?1:0)).join(',')].join('|');
+  const sig=[fbUser?fbUser.uid:'', net.code, net.map, save.map, mpMsg, net.peersList.map(p=>p.peer+':'+peerName(p.peer)+':'+(p.presence&&p.presence.playing?1:0)).join(','),
+    roomList.map(r=>r.code+r.n+(r.live?1:0)+r.map).join(',')].join('|');
+  if(fbUser && !net.code && !roomListTimer){ roomListTimer=setInterval(()=>{ if(!$('mp-panel').hidden && !net.code) refreshRoomList(); },5000); refreshRoomList(); }
   if(sig===mpSig) return; mpSig=sig;
   el.innerHTML='';
   const add=h=>{ const d=document.createElement('div'); d.innerHTML=h; while(d.firstChild) el.appendChild(d.firstChild); };
@@ -2112,6 +2165,15 @@ function renderMpCard(){
     inp.addEventListener('keydown',e=>{ if(e.key==='Enter') joinRoom(inp.value); });
     el.appendChild(row);
     if(mpMsg) add(`<div class="mp-sub ${/^Looking/.test(mpMsg)?'':'bad'}">${esc(mpMsg)}</div>`);
+    add(`<div class="mp-title" style="margin-top:4px">Open games</div>`);
+    const srv=document.createElement('div'); srv.className='srv';
+    if(!roomList.length) srv.innerHTML='<div class="srv-empty">No open games right now — create one and your friends will see it here.</div>';
+    roomList.forEach(r=>{
+      const row=document.createElement('div'); row.className='srv-row';
+      row.innerHTML=`<span class="code">${esc(r.code)}</span><span class="meta"><b>${esc((MAP_LIST.find(m=>m.id===r.map)||{}).name||r.map)}</b> · ${r.n} player${r.n===1?'':'s'}${r.host?` · host ${esc(r.host)}`:''}</span><span class="st ${r.live?'live':''}">${r.live?'in match':'in lobby'}</span>`;
+      row.appendChild(B('Join',()=>joinRoom(r.code),'primary')); srv.appendChild(row);
+    });
+    el.appendChild(srv);
     return;
   }
   const mapName=(MAP_LIST.find(m=>m.id===net.map)||{}).name||net.map;
@@ -2139,16 +2201,66 @@ function syncRemotes(){
   mpPlayingPeers().forEach(p=>{
     live.add(p.peer);
     let r=remotes.get(p.peer);
+    const pr=p.presence;
     if(!r){
-      r={mesh:makeRig(peerColor(p.peer)), tx:0,ty:0,tz:0,tyaw:0, name:peerName(p.peer)};
+      r={mesh:makeRig(peerColor(p.peer)), tx:0,ty:0,tz:0,tyaw:0, name:peerName(p.peer), snaps:[], phase:0, wep:null, hp:100, tag:null};
+      if(typeof pr.x==='number'){ r.mesh.position.set(+pr.x||0,Math.max(0,+pr.y||0),+pr.z||0); }
+      r.tag=document.createElement('div'); r.tag.className='tag3d'; r.tag.innerHTML='<span class="tn"></span><span class="th"><i></i></span>'; $('tags').appendChild(r.tag);
       remotes.set(p.peer,r);
     }
-    const pr=p.presence;
-    if(typeof pr.x==='number'&&isFinite(pr.x)){ r.tx=pr.x; r.ty=Math.max(0,+pr.y||0); r.tz=+pr.z||0; r.tyaw=+pr.yaw||0; }
-    r.name=peerName(p.peer);
-    r.mesh.visible=pr.dead!==true;
+    if(typeof pr.x==='number'&&isFinite(pr.x)){
+      const last=r.snaps[r.snaps.length-1];
+      const x=+pr.x, y=Math.max(0,+pr.y||0), z=+pr.z||0, yaw=+pr.yaw||0;
+      if(!last || last.x!==x || last.y!==y || last.z!==z || last.yaw!==yaw){
+        r.snaps.push({t:performance.now(), x,y,z,yaw}); if(r.snaps.length>12) r.snaps.shift();
+      }
+    }
+    r.name=peerName(p.peer); r.hp=Math.max(0,Math.min(100,+pr.hp||0));
+    if(pr.wep!==r.wep){ r.wep=pr.wep; const w=WEAPONS.find(x=>x.id===pr.wep); if(w&&r.mesh.children[7]) r.mesh.children[7].material.color.setHex(w.color); }
+    r.mesh.visible=pr.dead!==true; if(r.tag) r.tag.hidden=pr.dead===true;
   });
-  remotes.forEach((r,pid)=>{ if(!live.has(pid)){ scene && scene.remove(r.mesh); remotes.delete(pid); } });
+  remotes.forEach((r,pid)=>{ if(!live.has(pid)){ scene && scene.remove(r.mesh); if(r.tag) r.tag.remove(); remotes.delete(pid); } });
+}
+/* Render each remote ~110 ms in the past, between the two snapshots that bracket that time —
+   this is what makes other players glide smoothly instead of stuttering or rubber-banding. */
+const INTERP_DELAY=110;
+function stepRemote(r,dt){
+  const sn=r.snaps; if(!sn.length) return;
+  const now=performance.now()-INTERP_DELAY;
+  let a=sn[0], b=sn[sn.length-1];
+  for(let i=0;i<sn.length-1;i++){ if(sn[i].t<=now && sn[i+1].t>=now){ a=sn[i]; b=sn[i+1]; break; } }
+  let f=1;
+  if(b.t>a.t){ f=(now-a.t)/(b.t-a.t); }
+  if(now>b.t){ // beyond newest snapshot: extrapolate briefly along the last velocity, then hold
+    const prev=sn.length>1?sn[sn.length-2]:b; const dtS=Math.max(1,b.t-prev.t);
+    const ex=Math.min(1,(now-b.t)/150)*0.3; // mild
+    a=prev; b={t:b.t+dtS, x:b.x+(b.x-prev.x)*ex, y:b.y, z:b.z+(b.z-prev.z)*ex, yaw:b.yaw}; f=1;
+  }
+  f=Math.max(0,Math.min(1,f));
+  const px=a.x+(b.x-a.x)*f, py=a.y+(b.y-a.y)*f, pz=a.z+(b.z-a.z)*f;
+  const m=r.mesh, dx=px-m.position.x, dz=pz-m.position.z;
+  const speed=Math.hypot(dx,dz)/Math.max(dt,1e-3);
+  m.position.set(px,py,pz);
+  let dy=b.yaw-a.yaw; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); m.rotation.y=a.yaw+dy*f+Math.PI;
+  // walk cycle: legs and arms swing with speed
+  r.phase+=Math.min(speed,9)*dt*2.2; const sw=Math.sin(r.phase)*Math.min(1,speed/3.5)*0.65;
+  const c=m.children; if(c[3]){ c[3].rotation.x=sw; c[4].rotation.x=-sw; c[5].rotation.x=-sw*0.7; c[6].rotation.x=sw*0.7; }
+  if(speed<0.2){ for(const i of [3,4,5,6]) if(c[i]) c[i].rotation.x*=0.85; }
+}
+const _tagV=new THREE.Vector3();
+function updateTags(){
+  const W=innerWidth, H=innerHeight;
+  remotes.forEach(r=>{
+    if(!r.tag) return;
+    if(!r.mesh.visible){ r.tag.hidden=true; return; }
+    _tagV.set(r.mesh.position.x, r.mesh.position.y+2.55, r.mesh.position.z).project(camera);
+    if(_tagV.z>1 || _tagV.x<-1.1 || _tagV.x>1.1 || _tagV.y<-1.2 || _tagV.y>1.2){ r.tag.hidden=true; return; }
+    const d=camera.position.distanceTo(r.mesh.position), sc=Math.max(0.6,Math.min(1.15,14/Math.max(d,1)+0.45));
+    r.tag.hidden=false;
+    r.tag.style.transform=`translate(-50%,-100%) translate(${((_tagV.x+1)/2*W).toFixed(0)}px,${((1-_tagV.y)/2*H).toFixed(0)}px) scale(${sc.toFixed(2)})`;
+    const tn=r.tag.firstChild; if(tn.textContent!==r.name) tn.textContent=r.name;
+    const bar=r.tag.lastChild.firstChild; bar.style.width=r.hp+'%'; bar.className=r.hp<=30?'low':'';
+  });
 }
 function remoteParts(){
   const arr=[]; remotes.forEach(r=>{ if(r.mesh.visible) arr.push(...r.mesh.children); }); return arr;
@@ -2190,7 +2302,37 @@ function sfx(type){
 
 /* ================= GAME ================= */
 const KEY={};
-addEventListener('keydown',e=>{ KEY[e.code]=true;
+/* ---- chat (in match and in the game lobby) ---- */
+let chatting=false; const chatLog=[];
+function openChat(){ if(!G || !inMp() || G.over) return; chatting=true; for(const k in KEY) KEY[k]=false; firing=false; $('chatbox').hidden=false; $('chat-hint').hidden=true; $('chat-in').value=''; $('chat-in').focus(); }
+function closeChat(){ chatting=false; const cb=$('chatbox'); if(cb){ cb.hidden=true; } if(G && inMp() && !G.over) $('chat-hint').hidden=false; }
+function sendChat(text){
+  const m=String(text||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,120);
+  if(!m || !room) return;
+  room.emit('chat',{m}).catch(()=>{});
+  if(room.kind!=='rtdb') pushChat(save.name,m,true);     // the database bus echoes our own message; the artifact bus does too but only once registered
+}
+function pushChat(name,m,mine){
+  chatLog.push({name,m,mine}); if(chatLog.length>40) chatLog.shift();
+  if(G) feed(`<b>${esc(name)}</b>: ${esc(m)}`,false,'chat');
+  const gl=$('gl-chat'); if(gl && $('gamelobby').style.display!=='none'){ renderLobbyChat(); }
+}
+function renderLobbyChat(){
+  const gl=$('gl-chat'); if(!gl) return;
+  gl.innerHTML=chatLog.length?chatLog.map(c=>`<div><b>${esc(c.name)}</b>: ${esc(c.m)}</div>`).join(''):'<div class="sys">Say hi — messages reach everyone in this game.</div>';
+  gl.scrollTop=gl.scrollHeight;
+}
+$('chat-in').addEventListener('keydown',e=>{
+  e.stopPropagation();
+  if(e.key==='Enter'){ sendChat($('chat-in').value); closeChat(); lockPointer(); }
+  else if(e.key==='Escape'){ closeChat(); lockPointer(); }
+});
+$('gl-chat-send').onclick=()=>{ sendChat($('gl-chat-in').value); $('gl-chat-in').value=''; };
+$('gl-chat-in').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key==='Enter'){ sendChat($('gl-chat-in').value); $('gl-chat-in').value=''; } });
+addEventListener('keydown',e=>{
+  if(chatting) return;
+  if(G && !G.over && inMp() && (e.key==='Enter' || (e.code==='KeyT' && !e.repeat))){ e.preventDefault(); openChat(); return; }
+  KEY[e.code]=true;
   if(G && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   if(G && !G.over){
     if(e.code==='KeyR') startReload();
@@ -2292,7 +2434,8 @@ function buildViewModel(){
 function startGame(testId=null,practice=false){
   preview=null; $('gamelobby').style.display='none'; $('countdown').style.display='none';
   // teardown
-  remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); }); remotes.clear();
+  remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); if(r.tag) r.tag.remove(); }); remotes.clear();
+  $('tags').innerHTML=''; closeChat();
   scene=new THREE.Scene(); colliders=[]; solidMeshes=[]; tracers.length=0; particles.length=0;
   scene.add(camera);
   const mode=(save.mode==='mp' && room && !practice)?'mp':'solo';
@@ -2333,6 +2476,7 @@ function startGame(testId=null,practice=false){
   else feed(`Level <b>${level}</b> · ${G.bots.length} rivals on ${mapName}. They get sharper the longer you survive.`);
   if(save.map==='splash' && !practice) feed('🏄 Climb a tower ladder (or hit a teal jump pad), then walk into the glowing ring to ride the slide');
   renderWallet(); renderSlots(); updateHUD(); renderBoard();
+  $('chat-hint').hidden=!(mode==='mp' && room && room.kind==='rtdb');
   lockPointer();
 }
 function currentWeaponIdMag(id){ return WEAPONS.find(w=>w.id===id).mag; }
@@ -2348,8 +2492,8 @@ function renderSlots(){
     s.innerHTML=`<b>${i+1}</b>${w.name}`; $('slots').appendChild(s);
   });
 }
-function feed(html,death){
-  const d=document.createElement('div'); d.className='feeditem'+(death?' death':''); d.innerHTML=html;
+function feed(html,death,kind){
+  const d=document.createElement('div'); d.className='feeditem'+(death?' death':'')+(kind?' '+kind:''); d.innerHTML=html;
   $('feed').prepend(d);
   while($('feed').children.length>5) $('feed').lastChild.remove();
   setTimeout(()=>{ d.style.opacity='0'; d.style.transition='opacity .5s'; setTimeout(()=>d.remove(),500); },4000);
@@ -2739,17 +2883,11 @@ function animate(){
 
   /* opponents */
   if(inMp()){
-    room.presence({x:+G.pos.x.toFixed(2), y:+G.pos.y.toFixed(2), z:+G.pos.z.toFixed(2),
+    room.presence({wep:G.wep, x:+G.pos.x.toFixed(2), y:+G.pos.y.toFixed(2), z:+G.pos.z.toFixed(2),
       yaw:+yaw.toFixed(3), hp:Math.round(G.hp), score:G.kills}).catch(()=>{});
     syncRemotes();
-    const k=Math.min(1,dt*11);
     let best=0;
-    remotes.forEach(r=>{
-      r.mesh.position.x+=(r.tx-r.mesh.position.x)*k;
-      r.mesh.position.y+=(r.ty-r.mesh.position.y)*k;
-      r.mesh.position.z+=(r.tz-r.mesh.position.z)*k;
-      r.mesh.rotation.y=r.tyaw+Math.PI;
-    });
+    remotes.forEach(r=>stepRemote(r,dt));
     mpPlayingPeers().forEach(p=>{ const s=+p.presence.score; if(isFinite(s)&&s>best) best=s; });
     $('s-foe').textContent=best;
     if(G.t-(G.boardT||0)>0.5){ G.boardT=G.t; renderBoard(); }
@@ -2782,6 +2920,7 @@ function animate(){
     G.pos.y + EYE + (Math.random()-0.5)*G.shake*0.25,
     G.pos.z);
   camera.rotation.set(0,0,0); camera.rotateY(yaw); camera.rotateX(pitch);
+  if(inMp()) updateTags();
   renderer.render(scene,camera);
 }
 animate();
@@ -2800,7 +2939,8 @@ $('again').onclick=()=>{ if(room && room.kind==='rtdb' && net.code && G && G.mod
 $('tolobby').onclick=()=>{ if(room && room.kind==='rtdb' && net.code && G && G.mode==='mp' && isHost()) net.ref.child('match').set({state:'lobby'}).catch(()=>{}); backToLobby(); };
 function backToLobby(){
   if(room) room.presence({playing:false}).catch(()=>{});
-  remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); }); remotes.clear();
+  remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); if(r.tag) r.tag.remove(); }); remotes.clear();
+  closeChat();
   G=null; scene=null;
   $('hud').style.display='none'; $('pause').style.display='none'; $('end').style.display='none'; $('death').style.display='none';
   document.exitPointerLock && document.exitPointerLock();
@@ -2873,6 +3013,11 @@ canvas.addEventListener('click',()=>{ if(G && !G.over && !G.paused && document.p
   room.on('win', msg=>{
     if(!inMp() || msg.sameTab || G.over) return;
     endRound(false, peerName(msg.peer));
+  });
+  room.on('chat', msg=>{
+    const d=msg.data; if(!d || typeof d.m!=='string') return;
+    if(room.kind!=='rtdb' && msg.sameTab) return;      // artifact bus: we already showed our own line
+    pushChat(peerName(msg.peer), d.m.slice(0,120), msg.sameTab);
   });
 })();
 </script>
