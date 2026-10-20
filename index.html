@@ -183,6 +183,58 @@
   .cos-for{color:var(--dim); font-size:11px; letter-spacing:.5px; text-transform:uppercase;}
   .cos-desc{color:var(--dim); font-size:11.5px; line-height:1.4;}
   .cos .wbtn{padding:8px; font-size:12.5px; margin-top:0;}
+  /* ---------- game lobby (host screen) ---------- */
+  .gamelobby{z-index:35; justify-content:center; background:rgba(10,13,19,.58); backdrop-filter:blur(2px);}
+  .gl-card{width:min(560px,100%); background:rgba(26,33,48,.96); border:1px solid var(--line); border-radius:18px; padding:24px 24px 20px;
+    display:flex; flex-direction:column; gap:14px; box-shadow:0 24px 70px rgba(0,0,0,.55); text-align:center;}
+  .gl-eyebrow{font-size:11px; letter-spacing:2.5px; text-transform:uppercase; color:var(--dim);}
+  .gl-code{font-family:'Russo One',Rubik,sans-serif; font-size:clamp(44px,10vw,72px); letter-spacing:14px; padding-left:14px; color:var(--own);
+    text-shadow:0 0 24px rgba(53,208,186,.45); line-height:1;}
+  .gl-share{font-size:12.5px; color:var(--dim); line-height:1.5;}
+  .gl-share b{color:var(--text);}
+  .gl-row{display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; font-size:13px; color:var(--dim);}
+  .gl-row b{color:var(--text);}
+  .gl-row select{background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:6px 10px; font-family:Rubik,sans-serif; font-size:13px;}
+  .gl-players{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px;}
+  .gl-player{display:flex; align-items:center; gap:8px; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; text-align:left;}
+  .gl-player.me{border-color:var(--own);}
+  .gl-player .avatar{width:30px; height:30px; font-size:14px; border-radius:9px;}
+  .gl-player .n{font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .gl-player .r{font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--dim);}
+  .gl-player .r.host{color:var(--gold);}
+  .gl-player .r.battle{color:var(--accent2);}
+  .gl-status{font-size:13px; color:var(--dim); min-height:18px;}
+  .gl-status b{color:var(--own);}
+  #countdown{z-index:36; background:rgba(10,13,19,.45);}
+  #cd-num{font-size:clamp(90px,22vw,160px); color:var(--accent); text-shadow:0 0 40px rgba(255,122,47,.6);}
+  #board{right:18px; top:78px; min-width:190px; font-size:12px; padding:8px 12px;}
+  #board .bh{font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--dim); margin-bottom:4px;}
+  #board .br{display:flex; justify-content:space-between; gap:10px; padding:2px 0; color:var(--text);}
+  #board .br.me{color:var(--own);}
+  #board .br.lead{color:var(--gold);}
+  #board .br b{font-family:'Russo One',Rubik,sans-serif; font-weight:400;}
+  #end-board{display:flex; flex-direction:column; gap:3px; min-width:220px; font-size:14px;}
+  #end-board .br{display:flex; justify-content:space-between; gap:16px; padding:3px 10px; border-radius:6px;}
+  #end-board .br.me{background:rgba(53,208,186,.12); color:var(--own);}
+  #end-board .br.lead{color:var(--gold);}
+  /* ---------- online rooms panel ---------- */
+  .mp-panel{margin-top:12px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;
+    display:flex; flex-direction:column; gap:10px;}
+  .mp-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .mp-row input{background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:8px 10px;
+    font-family:Rubik,sans-serif; font-weight:700; font-size:14px; letter-spacing:3px; text-transform:uppercase; width:110px;}
+  .mp-row input:focus{outline:2px solid var(--accent); border-color:var(--accent);}
+  .mp-title{font-family:'Russo One',Rubik,sans-serif; font-size:13px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text);}
+  .mp-code{font-family:'Russo One',Rubik,sans-serif; font-size:22px; letter-spacing:6px; color:var(--own); background:rgba(53,208,186,.1);
+    border:1px solid rgba(53,208,186,.35); border-radius:8px; padding:4px 12px;}
+  .mp-sub{font-size:12px; color:var(--dim); line-height:1.5;}
+  .mp-sub.bad{color:var(--bad);}
+  .mp-players{display:flex; gap:6px; flex-wrap:wrap;}
+  .mp-player{font-size:12px; border-radius:20px; padding:4px 10px; background:var(--panel2); border:1px solid var(--line); color:var(--text);}
+  .mp-player.me{border-color:var(--own); color:var(--own);}
+  .mp-player.playing{border-color:var(--accent); color:var(--accent2);}
+  .mp-player small{color:var(--dim); margin-left:4px;}
+  .abtn.primary{background:var(--accent); color:#1a1006; border-color:var(--accent);}
   /* ---------- auth page ---------- */
   .authpage{z-index:40; justify-content:center; background:radial-gradient(900px 600px at 50% 0%, #1f2a40 0%, #10141c 65%);}
   .authwrap{width:min(420px,100%); display:flex; flex-direction:column; align-items:center; gap:6px;}
@@ -452,10 +504,11 @@
       </button>
       <button class="modecard" id="mode-mp">
         <div class="modename">Multiplayer</div>
-        <div class="modedesc">Go against real players who have this page open — same map, live PvP.</div>
+        <div class="modedesc">Play against real people anywhere — create a room, share the 4-letter code, or quick match.</div>
         <span class="modestatus off" id="mp-status">Connecting…</span>
       </button>
     </div>
+    <div class="mp-panel" id="mp-panel" hidden></div>
     <div class="namerow"><label for="callsign">Call sign</label><input id="callsign" maxlength="14" spellcheck="false"></div>
   </div>
 
@@ -506,6 +559,24 @@
   </div>
 </div>
 
+<!-- ============ GAME LOBBY (host screen) ============ -->
+<div class="overlay gamelobby" id="gamelobby" style="display:none">
+  <div class="gl-card">
+    <div class="gl-eyebrow">Game ID — share it with your rivals</div>
+    <div class="gl-code" id="gl-code">----</div>
+    <div class="gl-share">Rivals go to <b id="gl-url"></b>, log in, choose <b>Multiplayer</b> and type this code.</div>
+    <div class="gl-row"><span>Map: <b id="gl-map"></b></span><select id="gl-mapsel" hidden></select></div>
+    <div class="gl-players" id="gl-players"></div>
+    <div class="gl-status" id="gl-status"></div>
+    <div class="btnrow">
+      <button class="obtn primary" id="gl-start">Start game</button>
+      <button class="obtn" id="gl-copy">Copy code</button>
+      <button class="obtn" id="gl-leave">Leave game</button>
+    </div>
+  </div>
+</div>
+<div class="center-ov" id="countdown"><div class="big" id="cd-num">3</div><div class="sub">Get ready…</div></div>
+
 <!-- ============ HUD ============ -->
 <div id="hud">
   <div id="dmgvig"></div>
@@ -516,6 +587,7 @@
   <div class="hudpanel" id="ammo-box"><div id="wep-label">BLASTER</div><div id="ammo">15 <small>/ ∞</small></div><div id="reload-note"></div></div>
   <div class="hudpanel" id="score-box"><span class="you" id="s-you">0</span><span class="goal">FIRST TO 10</span><span class="foe" id="s-foe">0</span></div>
   <div class="hudpanel" id="bomb-box"><small>bombs</small>💣 <span id="bomb-n">0</span></div>
+  <div class="hudpanel" id="board" hidden></div>
   <div id="feed"></div>
   <div id="slots"></div>
 </div>
@@ -537,6 +609,7 @@
 <div class="center-ov" id="end">
   <div class="big" id="end-title">Victory</div>
   <div class="sub" id="end-sub"></div>
+  <div id="end-board" hidden></div>
   <div class="btnrow">
     <button class="obtn primary" id="again">Play again</button>
     <button class="obtn" id="tolobby">Back to lobby</button>
@@ -548,10 +621,17 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
+/* shared multiplayer state — declared early because lobby renderers run at startup */
+let room=null, myPeerId=null, lastAttacker=null, lastShotEmit=0;
+let rtdb=null, mpMsg='';
+let mpSig='';
+const net={code:null,map:null,ref:null,playersRef:null,eventsRef:null,sid:null,joinedAt:0,match:{state:'lobby'},playedRound:0,
+  peersList:[],peerCbs:[],topicCbs:{},pending:{},flushTimer:null,unsubs:[],prevIds:new Set()};
 /* ================= DATA ================= */
 const WEAPONS = [
   {id:'blaster', name:'Blaster',    price:0,    dmg:12, cd:0.14, auto:true,  mag:15, reload:1.2, pellets:1, spread:0.012, desc:'Standard-issue sidearm. Reliable in all scenarios.', color:0x9aa7bd},
@@ -850,6 +930,10 @@ function mergeProfile(d){
 }
 /* Firebase backend (username + password login, Firestore database) */
 let fbAuth=null, fbDb=null, fbUser=null, fbUsername='', fbMsg='';
+function ensureFirebase(){
+  if(!(window.firebase && window.BLAST_FIREBASE_CONFIG && window.BLAST_FIREBASE_CONFIG.apiKey)) return false;
+  try{ if(!firebase.apps.length) firebase.initializeApp(window.BLAST_FIREBASE_CONFIG); return true; }catch(e){ return false; }
+}
 function fbReady(){ return !!(fbAuth && fbDb); }
 function fbEmail(u){ return u+'@players.blastrivals.app'; }   // usernames are stored as synthetic emails
 function fbDocRef(){ return fbDb.collection('players').doc(fbUser.uid); }
@@ -928,6 +1012,7 @@ async function fbLogin(){
   catch(e){ fbMsg=fbFriendly(e); setAcct('fb-out'); }
 }
 async function fbLogout(){
+  if(typeof leaveRoom==='function') await leaveRoom();
   try{ await fbAuth.signOut(); }catch(e){}
 }
 let signupBody=null, fbWasIn=false;
@@ -1018,6 +1103,7 @@ function renderAcct(){
     B('Copy code',async ev=>{ try{ await navigator.clipboard.writeText(acctCode); ev.target.textContent='Copied!'; setTimeout(()=>{ev.target.textContent='Copy code';},1200); }catch(e){} });
     B('Use another code',()=>{ acctLinkMsg='Enter the account code to switch to:'; setAcct('link'); });
   }
+  if(typeof renderMpCard==='function') renderMpCard();
 }
 function renderRivalLobby(peers){
   const sub=$('rival-lobby-sub'), avatars=$('rival-avatars'), join=$('rival-join'); if(!sub||!avatars||!join) return;
@@ -1065,10 +1151,9 @@ async function linkAccount(code){
 (async()=>{
   await new Promise(r=>setTimeout(r,0));   // let the rest of the script finish loading first
   try{ if(window.claude && typeof window.claude.use==='function') db=await window.claude.use('db'); }catch(e){ db=null; }
-  if(!db && window.firebase && window.BLAST_FIREBASE_CONFIG && window.BLAST_FIREBASE_CONFIG.apiKey){
+  if(!db && ensureFirebase()){
     // self-hosted build: real login + Firestore database
     try{
-      firebase.initializeApp(window.BLAST_FIREBASE_CONFIG);
       fbAuth=firebase.auth(); fbDb=firebase.firestore();
       fbAuth.onAuthStateChanged(fbOnUser);
       return;
@@ -1099,7 +1184,8 @@ function renderMaps(){
     const d=document.createElement('button');
     d.className='mapcard'+(save.map===m.id?' sel':'');
     d.innerHTML=`<div class="mapthumb ${m.id}"><img class="map-art" src="images/arenas/${m.id}.svg" alt="${m.name} arena artwork"></div><div class="mapname">${m.name}</div><div class="mapdesc">${m.desc}</div>`;
-    d.onclick=()=>{ save.map=m.id; persist(); renderMaps(); };
+    d.onclick=()=>{ if(typeof net!=='undefined' && net.code && m.id!==net.map){ leaveRoom(); mpMsg='Left the room — rooms are tied to one map.'; }
+      save.map=m.id; persist(); renderMaps(); if(typeof renderMpCard==='function') renderMpCard(); };
     $('maps').appendChild(d);
   });
 }
@@ -1264,6 +1350,8 @@ $('shop-sort').addEventListener('change',e=>{ shopUI.sort=e.target.value; render
 function renderModes(){
   $('mode-solo').classList.toggle('sel', save.mode==='solo');
   $('mode-mp').classList.toggle('sel', save.mode==='mp');
+  if(typeof renderMpCard==='function') renderMpCard();
+  const play=$('play'); if(play) play.textContent=(save.mode==='mp' && room && room.kind==='rtdb')?(net.code?`Open game ${net.code}`:'Find a game'):'Deploy';
 }
 $('mode-solo').onclick=()=>{ save.mode='solo'; persist(); renderModes(); };
 $('mode-mp').onclick=()=>{ if(!room){ return; } save.mode='mp'; persist(); renderModes(); };
@@ -1813,7 +1901,6 @@ function makeBot(name,pos){
           vy:0, spawnAt:pos.slice(), strafe:0, strafeT:0, windup:0, flashT:0};
 }
 /* ================= MULTIPLAYER ================= */
-let room=null, myPeerId=null, lastAttacker=null, lastShotEmit=0;
 const remotes=new Map();           // peerId -> {mesh, tx,ty,tz,tyaw, name}
 const PLAYER_COLORS=[0x4fa3d1,0x2ecc71,0xf2c14e,0x8e6cc0,0xff8fb2,0x35d0ba,0xe07b39,0xb0c34e];
 function peerColor(id){ let h=0; for(const ch of id) h=(h*31+ch.charCodeAt(0))>>>0; return PLAYER_COLORS[h%PLAYER_COLORS.length]; }
@@ -1823,7 +1910,238 @@ function peerName(pid){
   const n=p && p.presence && typeof p.presence.name==='string' ? p.presence.name : 'RIVAL';
   return n.replace(/[^\w \-]/g,'').slice(0,14)||'RIVAL';
 }
-function inMp(){ return G && G.mode==='mp' && room; }
+function inMp(){ return G && G.mode==='mp' && room && (room.kind!=='rtdb' || net.code); }
+/* ================= ONLINE ROOMS — Firebase Realtime Database =================
+   Speaks the same interface as the artifact's room bus (presence / peers / emit / on),
+   so the match code below does not care which one it is talking to. */
+function makeRtdbRoom(){
+  return {
+    kind:'rtdb',
+    connected(){ return !!net.code; },
+    presence(patch){ Object.assign(net.pending,patch); if(net.code && !net.flushTimer) net.flushTimer=setTimeout(flushPresence,80); return Promise.resolve(); },
+    peers(){ return net.peersList; },
+    onPeers(cb){ net.peerCbs.push(cb); return ()=>{ net.peerCbs=net.peerCbs.filter(f=>f!==cb); }; },
+    emit(topic,data){ if(!net.eventsRef) return Promise.resolve();
+      return net.eventsRef.push({topic,data:data===undefined?null:data,by:net.sid,t:Date.now()}).then(()=>{},()=>{}); },
+    on(topic,fn){ (net.topicCbs[topic]=net.topicCbs[topic]||[]).push(fn); return ()=>{ net.topicCbs[topic]=(net.topicCbs[topic]||[]).filter(f=>f!==fn); }; },
+  };
+}
+function flushPresence(){
+  net.flushTimer=null;
+  if(!net.code || !net.playersRef) return;
+  const patch=net.pending; net.pending={};
+  if(Object.keys(patch).length) net.playersRef.child(net.sid).update(patch).catch(()=>{});
+}
+function roomCode(){ const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c=''; for(let i=0;i<4;i++) c+=A[Math.floor(Math.random()*A.length)]; return c; }
+function deliverPeers(list){
+  const ids=new Set(list.map(p=>p.peer));
+  const joined=list.filter(p=>!net.prevIds.has(p.peer)), left=[...net.prevIds].filter(id=>!ids.has(id)).map(id=>({peer:id}));
+  net.prevIds=ids; net.peersList=list;
+  const ch={peers:list,joined,left,updated:list};
+  net.peerCbs.forEach(cb=>{ try{ cb(ch); }catch(e){} });
+}
+async function createRoom(){
+  if(!rtdb || !fbUser){ mpMsg='Log in to play online.'; renderMpCard(); return; }
+  for(let tries=0;tries<5;tries++){
+    const code=roomCode(), ref=rtdb.ref('rooms/'+code);
+    const snap=await ref.get(); if(snap.exists()) continue;
+    await ref.set({map:save.map, host:fbUser.uid, createdAt:Date.now(), open:true});
+    return joinRoom(code);
+  }
+  mpMsg='Could not get a room code — try again.'; renderMpCard();
+}
+async function joinRoom(codeIn){
+  if(!rtdb || !fbUser){ mpMsg='Log in to play online.'; renderMpCard(); return false; }
+  const code=String(codeIn||'').trim().toUpperCase();
+  if(!/^[A-Z0-9]{4}$/.test(code)){ mpMsg='Room codes are 4 letters, like KQ7P.'; renderMpCard(); return false; }
+  const ref=rtdb.ref('rooms/'+code);
+  let snap; try{ snap=await ref.get(); }catch(e){ mpMsg='Could not reach the room — check your connection.'; renderMpCard(); return false; }
+  if(!snap.exists()){ mpMsg=`No room with code ${code}.`; renderMpCard(); return false; }
+  const r=snap.val();
+  if(r.players && Object.keys(r.players).length>=8){ mpMsg='That room is full (8 players).'; renderMpCard(); return false; }
+  await leaveRoom();
+  net.code=code; net.map=MAP_LIST.some(m=>m.id===r.map)?r.map:'arena'; net.ref=ref;
+  net.playersRef=ref.child('players'); net.eventsRef=ref.child('events');
+  net.sid=fbUser.uid.slice(0,6)+'-'+Math.random().toString(36).slice(2,7); net.joinedAt=Date.now();
+  net.prevIds=new Set(); net.pending={};
+  if(save.map!==net.map){ save.map=net.map; persist(); renderMaps(); }
+  const me=net.playersRef.child(net.sid);
+  try{
+    await me.set({uid:fbUser.uid, name:save.name, playing:false, dead:false, map:net.map, score:0, t:Date.now()});
+    me.onDisconnect().remove();
+  }catch(e){ mpMsg='Could not join — are you logged in?'; net.code=null; renderMpCard(); return false; }
+  myPeerId=net.sid;
+  const onPlayers=snap2=>{
+    const v=snap2.val()||{};
+    deliverPeers(Object.keys(v).map(sid=>({peer:sid, by:v[sid].uid||null, isMe:v[sid].uid===fbUser.uid, sameTab:sid===net.sid, kind:'viewer', presence:v[sid], updatedAt:Date.now()})));
+    renderMpCard(); renderGameLobby();
+  };
+  net.playersRef.on('value',onPlayers); net.unsubs.push(()=>net.playersRef.off('value',onPlayers));
+  net.match={state:'lobby'}; net.playedRound=0;
+  const matchRef=ref.child('match'), mapRef=ref.child('map');
+  const onMatch=sn=>onMatchChange(sn.val()||{state:'lobby'});
+  const onMap=sn=>{ const id=sn.val(); if(!id || !MAP_LIST.some(m=>m.id===id) || id===net.map) return;
+    net.map=id; save.map=id; persist(); renderMaps(); if(preview) startPreview(id); renderGameLobby(); };
+  matchRef.on('value',onMatch); net.unsubs.push(()=>matchRef.off('value',onMatch));
+  mapRef.on('value',onMap); net.unsubs.push(()=>mapRef.off('value',onMap));
+  const q=net.eventsRef.orderByChild('t').startAt(net.joinedAt-500);
+  const onEvent=snap3=>{
+    const e=snap3.val(); if(!e || typeof e.topic!=='string') return;
+    const msg={topic:e.topic, data:e.data, peer:String(e.by||''), by:null, isMe:false, sameTab:e.by===net.sid, kind:'viewer'};
+    (net.topicCbs[e.topic]||[]).forEach(fn=>{ try{ fn(msg); }catch(err){} });
+  };
+  q.on('child_added',onEvent); net.unsubs.push(()=>q.off('child_added',onEvent));
+  mpMsg=''; renderMpCard(); renderModes();
+  if(net.match.state!=='playing') showGameLobby();
+  return true;
+}
+/* ---- host-driven match flow (Blooket / Among Us style) ---- */
+let preview=null, cdTimer=null;
+function hostSid(){ const ps=net.peersList.slice().sort((a,b)=>(+(a.presence&&a.presence.t)||0)-(+(b.presence&&b.presence.t)||0)); return ps.length?ps[0].peer:null; }
+function isHost(){ return !!net.code && hostSid()===net.sid; }
+function startPreview(mapId){
+  if(G) return;
+  if(vm){ camera.remove(vm); vm=null; }
+  scene=new THREE.Scene(); colliders=[]; solidMeshes=[]; tracers.length=0; particles.length=0;
+  mapAnims.length=0; mapPads.length=0; mapSlides.length=0; iceZones.length=0; ladders.length=0;
+  scene.add(camera);
+  BUILDERS[MAP_LIST.some(m=>m.id===mapId)?mapId:'arena']();
+  preview={t:0};
+}
+function stopPreview(){ preview=null; if(!G) scene=null; }
+function showGameLobby(){
+  if(!net.code) return;
+  $('lobby').style.display='none'; $('end').style.display='none'; $('pause').style.display='none';
+  $('gamelobby').style.display='flex';
+  startPreview(net.map); renderGameLobby();
+}
+function hideGameLobby(){ $('gamelobby').style.display='none'; stopPreview(); }
+function renderGameLobby(){
+  if($('gamelobby').style.display==='none' || !net.code) return;
+  $('gl-code').textContent=net.code;
+  $('gl-url').textContent=location.host+(location.pathname.replace(/index\.html$/,''));
+  const host=isHost(), hs=hostSid();
+  $('gl-map').textContent=(MAP_LIST.find(m=>m.id===net.map)||{}).name||net.map;
+  const sel=$('gl-mapsel'); sel.hidden=!host;
+  if(host){ sel.innerHTML=MAP_LIST.map(m=>`<option value="${m.id}" ${m.id===net.map?'selected':''}>${esc(m.name)}</option>`).join('');
+    sel.onchange=()=>{ net.ref.child('map').set(sel.value).catch(()=>{}); }; }
+  const ps=net.peersList.slice().sort((a,b)=>(+(a.presence&&a.presence.t)||0)-(+(b.presence&&b.presence.t)||0));
+  $('gl-players').innerHTML=ps.map(p=>{ const n=peerName(p.peer), inBattle=p.presence&&p.presence.playing===true;
+    return `<div class="gl-player ${p.sameTab?'me':''}"><span class="avatar">${esc(n.slice(0,1).toUpperCase())}</span><div><div class="n">${esc(n)}${p.sameTab?' (you)':''}</div><div class="r ${p.peer===hs?'host':inBattle?'battle':''}">${p.peer===hs?'👑 host':inBattle?'in battle':'ready'}</div></div></div>`; }).join('');
+  const n=ps.length;
+  $('gl-start').hidden=!host;
+  $('gl-start').textContent= n<2 ? 'Start anyway (solo)' : `Start game · ${n} players`;
+  $('gl-status').innerHTML= net.match.state==='playing' ? 'A round is in progress — you will join it.'
+    : host ? (n<2?'Waiting for rivals to join with your code…':'Everyone is in. Hit <b>Start game</b> when ready.')
+    : `Waiting for <b>${esc(peerName(hs||''))}</b> to start the game… (${n} player${n===1?'':'s'})`;
+}
+function onMatchChange(m){
+  const prev=net.match||{}; net.match=m||{state:'lobby'};
+  const st=net.match.state;
+  if(st==='playing' && net.match.round!==net.playedRound){
+    net.playedRound=net.match.round;
+    const wait=Math.max(0,(+net.match.startAt||0)-Date.now());
+    if(G && G.mode==='mp' && !G.over) return;          // already in it
+    runCountdown(wait);
+  } else if(st==='ended' && G && inMp() && !G.over){
+    endRound(net.match.winnerSid===net.sid, net.match.winnerName||'A rival');
+  } else if(st==='lobby' && prev.state && prev.state!=='lobby'){
+    if(G && G.mode==='mp'){ backToLobby(); } else if($('end').style.display==='flex'){ $('end').style.display='none'; showGameLobby(); }
+  }
+}
+function runCountdown(ms){
+  clearInterval(cdTimer);
+  $('gamelobby').style.display='none'; $('end').style.display='none';
+  if(ms<=300){ $('countdown').style.display='none'; stopPreview(); startGame(); return; }
+  const endAt=Date.now()+ms;
+  $('countdown').style.display='flex';
+  const tick=()=>{ const left=endAt-Date.now(); $('cd-num').textContent=Math.max(1,Math.ceil(left/1000));
+    if(left<=0){ clearInterval(cdTimer); cdTimer=null; $('countdown').style.display='none'; stopPreview(); startGame(); } };
+  tick(); cdTimer=setInterval(tick,100); sfx('buy');
+}
+function hostStart(){
+  if(!isHost()) return;
+  net.ref.child('match').set({state:'playing', startAt:Date.now()+3500, round:(net.match.round||0)+1, by:net.sid}).catch(()=>{});
+}
+$('gl-start').onclick=hostStart;
+$('gl-copy').onclick=async ev=>{ try{ await navigator.clipboard.writeText(net.code||''); ev.target.textContent='Copied!'; setTimeout(()=>{ ev.target.textContent='Copy code'; },1200); }catch(e){} };
+$('gl-leave').onclick=async()=>{ hideGameLobby(); await leaveRoom(); $('lobby').style.display='flex'; };
+function renderBoard(){
+  const el=$('board'); if(!inMp()){ el.hidden=true; return; }
+  const rows=[{name:save.name,score:G.kills,me:true},...net.peersList.filter(p=>!p.sameTab&&p.presence&&p.presence.playing).map(p=>({name:peerName(p.peer),score:+p.presence.score||0}))]
+    .sort((a,b)=>b.score-a.score).slice(0,8);
+  el.hidden=false;
+  el.innerHTML=`<div class="bh">Scoreboard · first to ${ROUND_GOAL}</div>`+rows.map((r,i)=>`<div class="br ${r.me?'me':''} ${i===0&&r.score>0?'lead':''}"><span>${esc(r.name)}</span><b>${r.score}</b></div>`).join('');
+}
+async function leaveRoom(){
+  if(!net.code) return;
+  const ref=net.ref, playersRef=net.playersRef, sid=net.sid;
+  net.unsubs.forEach(u=>{ try{ u(); }catch(e){} }); net.unsubs=[];
+  clearTimeout(net.flushTimer); net.flushTimer=null; net.pending={};
+  net.code=null; net.map=null; net.ref=null; net.playersRef=null; net.eventsRef=null; net.sid=null;
+  deliverPeers([]); myPeerId=null; net.match={state:'lobby'}; net.playedRound=0; hideGameLobby();
+  try{
+    await playersRef.child(sid).remove();
+    const rest=await playersRef.get();
+    if(!rest.exists()) await ref.remove();            // last one out turns off the lights
+  }catch(e){}
+  renderMpCard(); renderModes();
+}
+async function quickMatch(){
+  if(!rtdb || !fbUser){ mpMsg='Log in to play online.'; renderMpCard(); return false; }
+  mpMsg='Looking for a room…'; renderMpCard();
+  try{
+    const snap=await rtdb.ref('rooms').orderByChild('map').equalTo(save.map).limitToLast(25).get();
+    const now=Date.now(), rooms=snap.val()||{};
+    const open=Object.keys(rooms).filter(c=>{ const r=rooms[c]; const n=r.players?Object.keys(r.players).length:0;
+      return r.open!==false && n>0 && n<8 && (now-(+r.createdAt||0))<3*3600*1000; });
+    if(open.length) return joinRoom(open[Math.floor(Math.random()*open.length)]);
+  }catch(e){}
+  await createRoom(); return !!net.code;
+}
+window.addEventListener('beforeunload',()=>{ if(net.code && net.playersRef && net.sid) net.playersRef.child(net.sid).remove(); });
+function renderMpCard(){
+  const el=$('mp-panel'); if(!el) return;
+  const online=room && room.kind==='rtdb';
+  el.hidden=!(online && save.mode==='mp');
+  if(el.hidden){ mpSig=''; return; }
+  // only rebuild when something visible changed, so typing in the code box is never interrupted
+  const sig=[fbUser?fbUser.uid:'', net.code, net.map, save.map, mpMsg, net.peersList.map(p=>p.peer+':'+peerName(p.peer)+':'+(p.presence&&p.presence.playing?1:0)).join(',')].join('|');
+  if(sig===mpSig) return; mpSig=sig;
+  el.innerHTML='';
+  const add=h=>{ const d=document.createElement('div'); d.innerHTML=h; while(d.firstChild) el.appendChild(d.firstChild); };
+  const B=(label,fn,cls)=>{ const b=document.createElement('button'); b.className='abtn'+(cls?' '+cls:''); b.textContent=label; b.onclick=fn; return b; };
+  if(!fbUser){
+    add(`<div class="mp-title">Online rooms</div><div class="mp-sub">Log in to play against people on other computers — rooms are tied to accounts.</div>`);
+    const row=document.createElement('div'); row.className='mp-row'; row.appendChild(B('Log in / Sign up',()=>{ guest=false; renderAcct(); },'primary')); el.appendChild(row);
+    return;
+  }
+  if(!net.code){
+    const mapName=(MAP_LIST.find(m=>m.id===save.map)||{}).name||save.map;
+    add(`<div class="mp-title">Online rooms</div><div class="mp-sub">Create a room on <b>${esc(mapName)}</b> and share its code, join a friend's code, or quick match into any open room on this map.</div>`);
+    const row=document.createElement('div'); row.className='mp-row';
+    row.appendChild(B('Create room',createRoom,'primary')); row.appendChild(B('Quick match',quickMatch));
+    const inp=document.createElement('input'); inp.id='mp-code-in'; inp.placeholder='CODE'; inp.maxLength=4; inp.autocomplete='off'; row.appendChild(inp);
+    row.appendChild(B('Join',()=>joinRoom(inp.value)));
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') joinRoom(inp.value); });
+    el.appendChild(row);
+    if(mpMsg) add(`<div class="mp-sub ${/^Looking/.test(mpMsg)?'':'bad'}">${esc(mpMsg)}</div>`);
+    return;
+  }
+  const mapName=(MAP_LIST.find(m=>m.id===net.map)||{}).name||net.map;
+  const players=net.peersList;
+  add(`<div class="mp-row"><span class="mp-title">Room</span><span class="mp-code">${esc(net.code)}</span><span class="mp-sub">on <b>${esc(mapName)}</b> · ${players.length} player${players.length===1?'':'s'} · share the code, then everyone hits Deploy</span></div>`);
+  const list=document.createElement('div'); list.className='mp-players';
+  players.forEach(p=>{ const sp=document.createElement('span'); sp.className='mp-player'+(p.sameTab?' me':'')+(p.presence&&p.presence.playing?' playing':'');
+    sp.innerHTML=`${esc(peerName(p.peer))}${p.sameTab?'<small>you</small>':''}${p.presence&&p.presence.playing?'<small>in battle</small>':'<small>in lobby</small>'}`; list.appendChild(sp); });
+  el.appendChild(list);
+  const row=document.createElement('div'); row.className='mp-row';
+  row.appendChild(B('Open game lobby',showGameLobby,'primary'));
+  row.appendChild(B('Copy code',async ev=>{ try{ await navigator.clipboard.writeText(net.code); ev.target.textContent='Copied!'; setTimeout(()=>{ ev.target.textContent='Copy code'; },1200); }catch(e){} }));
+  row.appendChild(B('Leave room',leaveRoom));
+  el.appendChild(row);
+  if(mpMsg) add(`<div class="mp-sub bad">${esc(mpMsg)}</div>`);
+}
 function mpPlayingPeers(){
   if(!room) return [];
   // exclude only THIS tab — your own other tabs/devices are valid rivals (and how you test)
@@ -2074,6 +2392,7 @@ function stepLobby(dt){
 }
 
 function startGame(testId=null,practice=false){
+  preview=null; $('gamelobby').style.display='none'; $('countdown').style.display='none';
   // teardown
   remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); }); remotes.clear();
   scene=new THREE.Scene(); colliders=[]; solidMeshes=[]; tracers.length=0; particles.length=0;
@@ -2115,7 +2434,7 @@ function startGame(testId=null,practice=false){
   else if(mode==='mp') feed(`Playing as <b>${esc(save.name)}</b> — rivals on ${mapName} can see you`);
   else feed(`Level <b>${level}</b> · ${G.bots.length} rivals on ${mapName}. They get sharper the longer you survive.`);
   if(save.map==='splash' && !practice) feed('🏄 Climb a tower ladder (or hit a teal jump pad), then walk into the glowing ring to ride the slide');
-  renderWallet(); renderSlots(); updateHUD();
+  renderWallet(); renderSlots(); updateHUD(); renderBoard();
   lockPointer();
 }
 function currentWeaponIdMag(id){ return WEAPONS.find(w=>w.id===id).mag; }
@@ -2311,6 +2630,15 @@ function endRound(won,winnerName){
   $('death').style.display='none';
   if(won && !G.practice){ ensureEventState(); const einfo=eventInfo(); save.bombs+=WIN_BONUS; save.roundsWon=(save.roundsWon||0)+1; save.xp=(save.xp||0)+100; save.level=Math.max(1,1+Math.floor((save.xp||0)/250)); if(einfo.active){ save.eventStats.wins++; save.eventStats.bombs+=WIN_BONUS; } persist(); if(einfo.active) updateEventProgress(); }
   if(inMp()) room.presence({playing:false}).catch(()=>{});
+  const online=room && room.kind==='rtdb' && net.code && G.mode==='mp';
+  if(online && won && net.match.state!=='ended') net.ref.child('match').update({state:'ended', winnerSid:net.sid, winnerName:save.name, endedAt:Date.now()}).catch(()=>{});
+  const eb=$('end-board'); eb.hidden=!online;
+  if(online){
+    const rows=[{name:save.name,score:G.kills,me:true},...net.peersList.filter(p=>!p.sameTab).map(p=>({name:peerName(p.peer),score:+(p.presence&&p.presence.score)||0}))].sort((a,b)=>b.score-a.score);
+    eb.innerHTML=rows.map((r,i)=>`<div class="br ${r.me?'me':''} ${i===0?'lead':''}"><span>${i+1}. ${esc(r.name)}</span><span>${r.score}</span></div>`).join('');
+    $('again').hidden=!isHost(); $('again').textContent='Play again · everyone';
+    $('tolobby').textContent=isHost()?'Back to game lobby · everyone':'Back to game lobby';
+  } else { $('again').hidden=false; $('again').textContent='Play again'; $('tolobby').textContent='Back to lobby'; }
   $('end-title').textContent=won?'Victory':'Defeat';
   $('end-title').className='big '+(won?'win':'lose');
   $('end-sub').innerHTML=(G.practice
@@ -2402,6 +2730,14 @@ function stepBot(bot,dt){
 const clock=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
+  if(!G && preview && scene){                 // game-lobby map preview: slow orbit around the arena
+    const dt=Math.min(0.05, clock.getDelta()); preview.t+=dt;
+    const a=preview.t*0.12;
+    camera.position.set(Math.cos(a)*44, 17+Math.sin(preview.t*0.4)*2, Math.sin(a)*44);
+    camera.lookAt(0,3,0);
+    for(const fn of mapAnims) fn(dt,preview.t);
+    renderer.render(scene,camera); return;
+  }
   if(!G || !scene){ return; }
   const dt=Math.min(0.05, clock.getDelta());
   if(G.paused || G.over){ renderer.render(scene,camera); return; }
@@ -2519,6 +2855,7 @@ function animate(){
     });
     mpPlayingPeers().forEach(p=>{ const s=+p.presence.score; if(isFinite(s)&&s>best) best=s; });
     $('s-foe').textContent=best;
+    if(G.t-(G.boardT||0)>0.5){ G.boardT=G.t; renderBoard(); }
   } else {
     // difficulty ramps with time survived and your kills
     G.diff=Math.min(0.95, G.baseDiff + G.t/150 + G.kills*0.05);
@@ -2553,19 +2890,25 @@ function animate(){
 animate();
 
 /* ================= WIRING ================= */
-$('play').onclick=()=>{ sfx('buy'); startGame(); };
+$('play').onclick=async()=>{
+  if(save.mode==='mp' && room && room.kind==='rtdb'){
+    if(!net.code){ const ok=await quickMatch(); if(!ok) return; }   // quick match, then the game lobby
+    showGameLobby(); return;
+  }
+  sfx('buy'); startGame();
+};
 $('resume').onclick=()=>{ showPause(false); lockPointer(); };
 $('leave').onclick=()=>{ backToLobby(); };
-$('again').onclick=()=>{ startGame(); };
-$('tolobby').onclick=()=>{ backToLobby(); };
+$('again').onclick=()=>{ if(room && room.kind==='rtdb' && net.code && G && G.mode==='mp'){ if(isHost()) hostStart(); return; } startGame(); };
+$('tolobby').onclick=()=>{ if(room && room.kind==='rtdb' && net.code && G && G.mode==='mp' && isHost()) net.ref.child('match').set({state:'lobby'}).catch(()=>{}); backToLobby(); };
 function backToLobby(){
   if(room) room.presence({lobby:true,playing:false,name:save.name,format:save.matchFormat||'1v1'}).catch(()=>{});
   remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); }); remotes.clear();
   G=null; scene=null;
   $('hud').style.display='none'; $('pause').style.display='none'; $('end').style.display='none'; $('death').style.display='none';
-  $('lobby').style.display='flex';
   document.exitPointerLock && document.exitPointerLock();
   renderWallet(); renderShop(); renderMaps(); startLobbyWorld();
+    if(room && room.kind==='rtdb' && net.code) showGameLobby(); else $('lobby').style.display='flex';
 }
 // re-lock when clicking the canvas mid-round after focus loss
 canvas.addEventListener('click',()=>{ if(G && !G.over && !G.paused && document.pointerLockElement!==canvas) lockPointer(); });
@@ -2577,6 +2920,9 @@ canvas.addEventListener('click',()=>{ if(G && !G.over && !G.paused && document.p
       room=await window.claude.use('room');
   }catch(e){ room=null; }
   const st=$('mp-status');
+  if(!room && ensureFirebase() && firebase.database){
+    try{ rtdb=firebase.database(); room=makeRtdbRoom(); }catch(e){ rtdb=null; room=null; }
+  }
   if(!room){
     renderRivalLobby([]);
     st.textContent='Solo only in this view';
@@ -2586,10 +2932,16 @@ canvas.addEventListener('click',()=>{ if(G && !G.over && !G.paused && document.p
   }
   if(G&&G.lobby) publishLobbyPresence();
   st.classList.remove('off'); st.textContent='Online';
+  if(room.kind==='rtdb'){
+    const refreshStatus=()=>{ st.textContent=!fbUser?'Online — log in to play':net.code?`In room ${net.code} · ${net.peersList.length} player${net.peersList.length===1?'':'s'}`:'Online — create or join a room'; renderMpCard(); };
+    refreshStatus(); setInterval(refreshStatus,1500);
+  }
+  renderModes();
   room.onPeers(ch=>{
     renderRivalLobby(ch.peers);
     const me=ch.peers.find(p=>p.isMe && p.sameTab);
     if(me) myPeerId=me.peer;
+    if(room.kind==='rtdb') return;
     const others=ch.peers.filter(p=>p.kind==='viewer' && !p.sameTab);
     const playing=others.filter(p=>p.presence && p.presence.playing===true);
     st.textContent= others.length>0

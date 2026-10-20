@@ -1,0 +1,36 @@
+{
+  "rules": {
+    "rooms": {
+      ".read": "auth != null",
+      ".indexOn": [
+        "map",
+        "createdAt"
+      ],
+      "$room": {
+        ".write": "auth != null && (!data.exists() || (!newData.exists() && !data.child('players').hasChildren()))",
+        "open": {
+          ".write": "auth != null"
+        },
+        "players": {
+          "$sid": {
+            ".write": "auth != null && (!data.exists() || data.child('uid').val() == auth.uid)"
+          }
+        },
+        "events": {
+          "$e": {
+            ".write": "auth != null && !data.exists()"
+          },
+          ".indexOn": [
+            "t"
+          ]
+        },
+        "map": {
+          ".write": "auth != null"
+        },
+        "match": {
+          ".write": "auth != null"
+        }
+      }
+    }
+  }
+}
