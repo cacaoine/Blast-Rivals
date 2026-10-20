@@ -23,6 +23,12 @@
           ".indexOn": [
             "t"
           ]
+        },
+        "map": {
+          ".write": "auth != null"
+        },
+        "match": {
+          ".write": "auth != null"
         }
       }
     }

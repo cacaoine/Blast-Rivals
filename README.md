@@ -10,7 +10,7 @@ Open `index.html` in a browser (or serve the folder with any static server). Fir
 - **Armory**: 27 weapons from the free Blaster up to the Railgun — higher damage costs more bombs. Hold to fire. Every weapon has a **Test Fire** button for a free practice session (no purchases, no rewards).
 - **Cosmetics**: 35 per-gun skins and 26 universal wraps (Gold Plate, Galaxy, Hologram, Emberglass…).
 - **Maps**: Arena, Docks, Splash (ride the slides!), Construction, Neon District, Glacier, Temple.
-- **Modes**: Solo vs Bots, or **online Multiplayer** — create a room, share its 4-letter code (or Quick match) and play live against people on any computer, anywhere.
+- **Modes**: Solo vs Bots, or **online Multiplayer** like Blooket/Among Us — a host creates a game and gets a 4-letter Game ID, rivals join with it from any computer, the host picks the map and presses Start, and everyone drops in together after a countdown with a live scoreboard, shared results and host-controlled rematches.
 - **Unlimited levels**: eliminations and round wins award XP; your level raises bot difficulty and adds rivals over time.
 - **Monthly Golden Case Day**: one day a month the lobby runs 25 hard tasks; every five completed tasks earns a case (max 5) with all contents and exact odds shown up front.
 
