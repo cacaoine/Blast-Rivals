@@ -1,3 +1,7 @@
 {
-  "projects": { "default": "caroline-s-game" }
+  "projects": {
+    "default": "caroline-s-game"
+  },
+  "targets": {},
+  "etags": {}
 }

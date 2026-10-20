@@ -176,6 +176,24 @@
   .cos-for{color:var(--dim); font-size:11px; letter-spacing:.5px; text-transform:uppercase;}
   .cos-desc{color:var(--dim); font-size:11.5px; line-height:1.4;}
   .cos .wbtn{padding:8px; font-size:12.5px; margin-top:0;}
+  /* ---------- online rooms panel ---------- */
+  .mp-panel{margin-top:12px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;
+    display:flex; flex-direction:column; gap:10px;}
+  .mp-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .mp-row input{background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:8px 10px;
+    font-family:Rubik,sans-serif; font-weight:700; font-size:14px; letter-spacing:3px; text-transform:uppercase; width:110px;}
+  .mp-row input:focus{outline:2px solid var(--accent); border-color:var(--accent);}
+  .mp-title{font-family:'Russo One',Rubik,sans-serif; font-size:13px; letter-spacing:1.5px; text-transform:uppercase; color:var(--text);}
+  .mp-code{font-family:'Russo One',Rubik,sans-serif; font-size:22px; letter-spacing:6px; color:var(--own); background:rgba(53,208,186,.1);
+    border:1px solid rgba(53,208,186,.35); border-radius:8px; padding:4px 12px;}
+  .mp-sub{font-size:12px; color:var(--dim); line-height:1.5;}
+  .mp-sub.bad{color:var(--bad);}
+  .mp-players{display:flex; gap:6px; flex-wrap:wrap;}
+  .mp-player{font-size:12px; border-radius:20px; padding:4px 10px; background:var(--panel2); border:1px solid var(--line); color:var(--text);}
+  .mp-player.me{border-color:var(--own); color:var(--own);}
+  .mp-player.playing{border-color:var(--accent); color:var(--accent2);}
+  .mp-player small{color:var(--dim); margin-left:4px;}
+  .abtn.primary{background:var(--accent); color:#1a1006; border-color:var(--accent);}
   /* ---------- auth page ---------- */
   .authpage{z-index:40; justify-content:center; background:radial-gradient(900px 600px at 50% 0%, #1f2a40 0%, #10141c 65%);}
   .authwrap{width:min(420px,100%); display:flex; flex-direction:column; align-items:center; gap:6px;}
@@ -440,10 +458,11 @@
       </button>
       <button class="modecard" id="mode-mp">
         <div class="modename">Multiplayer</div>
-        <div class="modedesc">Go against real players who have this page open — same map, live PvP.</div>
+        <div class="modedesc">Play against real people anywhere — create a room, share the 4-letter code, or quick match.</div>
         <span class="modestatus off" id="mp-status">Connecting…</span>
       </button>
     </div>
+    <div class="mp-panel" id="mp-panel" hidden></div>
     <div class="namerow"><label for="callsign">Call sign</label><input id="callsign" maxlength="14" spellcheck="false"></div>
   </div>
 
@@ -536,10 +555,17 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
+/* shared multiplayer state — declared early because lobby renderers run at startup */
+let room=null, myPeerId=null, lastAttacker=null, lastShotEmit=0;
+let rtdb=null, mpMsg='';
+let mpSig='';
+const net={code:null,map:null,ref:null,playersRef:null,eventsRef:null,sid:null,joinedAt:0,
+  peersList:[],peerCbs:[],topicCbs:{},pending:{},flushTimer:null,unsubs:[],prevIds:new Set()};
 /* ================= DATA ================= */
 const WEAPONS = [
   {id:'blaster', name:'Blaster',    price:0,    dmg:12, cd:0.14, auto:true,  mag:15, reload:1.2, pellets:1, spread:0.012, desc:'Standard-issue sidearm. Reliable in all scenarios.', color:0x9aa7bd},
@@ -837,6 +863,10 @@ function mergeProfile(d){
 }
 /* Firebase backend (username + password login, Firestore database) */
 let fbAuth=null, fbDb=null, fbUser=null, fbUsername='', fbMsg='';
+function ensureFirebase(){
+  if(!(window.firebase && window.BLAST_FIREBASE_CONFIG && window.BLAST_FIREBASE_CONFIG.apiKey)) return false;
+  try{ if(!firebase.apps.length) firebase.initializeApp(window.BLAST_FIREBASE_CONFIG); return true; }catch(e){ return false; }
+}
 function fbReady(){ return !!(fbAuth && fbDb); }
 function fbEmail(u){ return u+'@players.blastrivals.app'; }   // usernames are stored as synthetic emails
 function fbDocRef(){ return fbDb.collection('players').doc(fbUser.uid); }
@@ -915,6 +945,7 @@ async function fbLogin(){
   catch(e){ fbMsg=fbFriendly(e); setAcct('fb-out'); }
 }
 async function fbLogout(){
+  if(typeof leaveRoom==='function') await leaveRoom();
   try{ await fbAuth.signOut(); }catch(e){}
 }
 let signupBody=null, fbWasIn=false;
@@ -1005,6 +1036,7 @@ function renderAcct(){
     B('Copy code',async ev=>{ try{ await navigator.clipboard.writeText(acctCode); ev.target.textContent='Copied!'; setTimeout(()=>{ev.target.textContent='Copy code';},1200); }catch(e){} });
     B('Use another code',()=>{ acctLinkMsg='Enter the account code to switch to:'; setAcct('link'); });
   }
+  if(typeof renderMpCard==='function') renderMpCard();
 }
 function renderRivalLobby(peers){
   const sub=$('rival-lobby-sub'), avatars=$('rival-avatars'), join=$('rival-join'); if(!sub||!avatars||!join) return;
@@ -1052,10 +1084,9 @@ async function linkAccount(code){
 (async()=>{
   await new Promise(r=>setTimeout(r,0));   // let the rest of the script finish loading first
   try{ if(window.claude && typeof window.claude.use==='function') db=await window.claude.use('db'); }catch(e){ db=null; }
-  if(!db && window.firebase && window.BLAST_FIREBASE_CONFIG && window.BLAST_FIREBASE_CONFIG.apiKey){
+  if(!db && ensureFirebase()){
     // self-hosted build: real login + Firestore database
     try{
-      firebase.initializeApp(window.BLAST_FIREBASE_CONFIG);
       fbAuth=firebase.auth(); fbDb=firebase.firestore();
       fbAuth.onAuthStateChanged(fbOnUser);
       return;
@@ -1086,7 +1117,8 @@ function renderMaps(){
     const d=document.createElement('button');
     d.className='mapcard'+(save.map===m.id?' sel':'');
     d.innerHTML=`<div class="mapthumb ${m.id}"><img class="map-art" src="images/arenas/${m.id}.svg" alt="${m.name} arena artwork"></div><div class="mapname">${m.name}</div><div class="mapdesc">${m.desc}</div>`;
-    d.onclick=()=>{ save.map=m.id; persist(); renderMaps(); };
+    d.onclick=()=>{ if(typeof net!=='undefined' && net.code && m.id!==net.map){ leaveRoom(); mpMsg='Left the room — rooms are tied to one map.'; }
+      save.map=m.id; persist(); renderMaps(); if(typeof renderMpCard==='function') renderMpCard(); };
     $('maps').appendChild(d);
   });
 }
@@ -1250,6 +1282,8 @@ $('shop-sort').addEventListener('change',e=>{ shopUI.sort=e.target.value; render
 function renderModes(){
   $('mode-solo').classList.toggle('sel', save.mode==='solo');
   $('mode-mp').classList.toggle('sel', save.mode==='mp');
+  if(typeof renderMpCard==='function') renderMpCard();
+  const play=$('play'); if(play) play.textContent=(save.mode==='mp' && typeof net!=='undefined' && net.code)?`Deploy to room ${net.code}`:'Deploy';
 }
 $('mode-solo').onclick=()=>{ save.mode='solo'; persist(); renderModes(); };
 $('mode-mp').onclick=()=>{ if(!room){ return; } save.mode='mp'; persist(); renderModes(); };
@@ -1799,7 +1833,6 @@ function makeBot(name,pos){
           vy:0, spawnAt:pos.slice(), strafe:0, strafeT:0, windup:0, flashT:0};
 }
 /* ================= MULTIPLAYER ================= */
-let room=null, myPeerId=null, lastAttacker=null, lastShotEmit=0;
 const remotes=new Map();           // peerId -> {mesh, tx,ty,tz,tyaw, name}
 const PLAYER_COLORS=[0x4fa3d1,0x2ecc71,0xf2c14e,0x8e6cc0,0xff8fb2,0x35d0ba,0xe07b39,0xb0c34e];
 function peerColor(id){ let h=0; for(const ch of id) h=(h*31+ch.charCodeAt(0))>>>0; return PLAYER_COLORS[h%PLAYER_COLORS.length]; }
@@ -1809,7 +1842,151 @@ function peerName(pid){
   const n=p && p.presence && typeof p.presence.name==='string' ? p.presence.name : 'RIVAL';
   return n.replace(/[^\w \-]/g,'').slice(0,14)||'RIVAL';
 }
-function inMp(){ return G && G.mode==='mp' && room; }
+function inMp(){ return G && G.mode==='mp' && room && (room.kind!=='rtdb' || net.code); }
+/* ================= ONLINE ROOMS — Firebase Realtime Database =================
+   Speaks the same interface as the artifact's room bus (presence / peers / emit / on),
+   so the match code below does not care which one it is talking to. */
+function makeRtdbRoom(){
+  return {
+    kind:'rtdb',
+    connected(){ return !!net.code; },
+    presence(patch){ Object.assign(net.pending,patch); if(net.code && !net.flushTimer) net.flushTimer=setTimeout(flushPresence,80); return Promise.resolve(); },
+    peers(){ return net.peersList; },
+    onPeers(cb){ net.peerCbs.push(cb); return ()=>{ net.peerCbs=net.peerCbs.filter(f=>f!==cb); }; },
+    emit(topic,data){ if(!net.eventsRef) return Promise.resolve();
+      return net.eventsRef.push({topic,data:data===undefined?null:data,by:net.sid,t:Date.now()}).then(()=>{},()=>{}); },
+    on(topic,fn){ (net.topicCbs[topic]=net.topicCbs[topic]||[]).push(fn); return ()=>{ net.topicCbs[topic]=(net.topicCbs[topic]||[]).filter(f=>f!==fn); }; },
+  };
+}
+function flushPresence(){
+  net.flushTimer=null;
+  if(!net.code || !net.playersRef) return;
+  const patch=net.pending; net.pending={};
+  if(Object.keys(patch).length) net.playersRef.child(net.sid).update(patch).catch(()=>{});
+}
+function roomCode(){ const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c=''; for(let i=0;i<4;i++) c+=A[Math.floor(Math.random()*A.length)]; return c; }
+function deliverPeers(list){
+  const ids=new Set(list.map(p=>p.peer));
+  const joined=list.filter(p=>!net.prevIds.has(p.peer)), left=[...net.prevIds].filter(id=>!ids.has(id)).map(id=>({peer:id}));
+  net.prevIds=ids; net.peersList=list;
+  const ch={peers:list,joined,left,updated:list};
+  net.peerCbs.forEach(cb=>{ try{ cb(ch); }catch(e){} });
+}
+async function createRoom(){
+  if(!rtdb || !fbUser){ mpMsg='Log in to play online.'; renderMpCard(); return; }
+  for(let tries=0;tries<5;tries++){
+    const code=roomCode(), ref=rtdb.ref('rooms/'+code);
+    const snap=await ref.get(); if(snap.exists()) continue;
+    await ref.set({map:save.map, host:fbUser.uid, createdAt:Date.now(), open:true});
+    return joinRoom(code);
+  }
+  mpMsg='Could not get a room code — try again.'; renderMpCard();
+}
+async function joinRoom(codeIn){
+  if(!rtdb || !fbUser){ mpMsg='Log in to play online.'; renderMpCard(); return false; }
+  const code=String(codeIn||'').trim().toUpperCase();
+  if(!/^[A-Z0-9]{4}$/.test(code)){ mpMsg='Room codes are 4 letters, like KQ7P.'; renderMpCard(); return false; }
+  const ref=rtdb.ref('rooms/'+code);
+  let snap; try{ snap=await ref.get(); }catch(e){ mpMsg='Could not reach the room — check your connection.'; renderMpCard(); return false; }
+  if(!snap.exists()){ mpMsg=`No room with code ${code}.`; renderMpCard(); return false; }
+  const r=snap.val();
+  if(r.players && Object.keys(r.players).length>=8){ mpMsg='That room is full (8 players).'; renderMpCard(); return false; }
+  await leaveRoom();
+  net.code=code; net.map=MAP_LIST.some(m=>m.id===r.map)?r.map:'arena'; net.ref=ref;
+  net.playersRef=ref.child('players'); net.eventsRef=ref.child('events');
+  net.sid=fbUser.uid.slice(0,6)+'-'+Math.random().toString(36).slice(2,7); net.joinedAt=Date.now();
+  net.prevIds=new Set(); net.pending={};
+  if(save.map!==net.map){ save.map=net.map; persist(); renderMaps(); }
+  const me=net.playersRef.child(net.sid);
+  try{
+    await me.set({uid:fbUser.uid, name:save.name, playing:false, dead:false, map:net.map, score:0, t:Date.now()});
+    me.onDisconnect().remove();
+  }catch(e){ mpMsg='Could not join — are you logged in?'; net.code=null; renderMpCard(); return false; }
+  myPeerId=net.sid;
+  const onPlayers=snap2=>{
+    const v=snap2.val()||{};
+    deliverPeers(Object.keys(v).map(sid=>({peer:sid, by:v[sid].uid||null, isMe:v[sid].uid===fbUser.uid, sameTab:sid===net.sid, kind:'viewer', presence:v[sid], updatedAt:Date.now()})));
+    renderMpCard();
+  };
+  net.playersRef.on('value',onPlayers); net.unsubs.push(()=>net.playersRef.off('value',onPlayers));
+  const q=net.eventsRef.orderByChild('t').startAt(net.joinedAt-500);
+  const onEvent=snap3=>{
+    const e=snap3.val(); if(!e || typeof e.topic!=='string') return;
+    const msg={topic:e.topic, data:e.data, peer:String(e.by||''), by:null, isMe:false, sameTab:e.by===net.sid, kind:'viewer'};
+    (net.topicCbs[e.topic]||[]).forEach(fn=>{ try{ fn(msg); }catch(err){} });
+  };
+  q.on('child_added',onEvent); net.unsubs.push(()=>q.off('child_added',onEvent));
+  mpMsg=''; renderMpCard(); renderModes();
+  return true;
+}
+async function leaveRoom(){
+  if(!net.code) return;
+  const ref=net.ref, playersRef=net.playersRef, sid=net.sid;
+  net.unsubs.forEach(u=>{ try{ u(); }catch(e){} }); net.unsubs=[];
+  clearTimeout(net.flushTimer); net.flushTimer=null; net.pending={};
+  net.code=null; net.map=null; net.ref=null; net.playersRef=null; net.eventsRef=null; net.sid=null;
+  deliverPeers([]); myPeerId=null;
+  try{
+    await playersRef.child(sid).remove();
+    const rest=await playersRef.get();
+    if(!rest.exists()) await ref.remove();            // last one out turns off the lights
+  }catch(e){}
+  renderMpCard(); renderModes();
+}
+async function quickMatch(){
+  if(!rtdb || !fbUser){ mpMsg='Log in to play online.'; renderMpCard(); return false; }
+  mpMsg='Looking for a room…'; renderMpCard();
+  try{
+    const snap=await rtdb.ref('rooms').orderByChild('map').equalTo(save.map).limitToLast(25).get();
+    const now=Date.now(), rooms=snap.val()||{};
+    const open=Object.keys(rooms).filter(c=>{ const r=rooms[c]; const n=r.players?Object.keys(r.players).length:0;
+      return r.open!==false && n>0 && n<8 && (now-(+r.createdAt||0))<3*3600*1000; });
+    if(open.length) return joinRoom(open[Math.floor(Math.random()*open.length)]);
+  }catch(e){}
+  await createRoom(); return !!net.code;
+}
+window.addEventListener('beforeunload',()=>{ if(net.code && net.playersRef && net.sid) net.playersRef.child(net.sid).remove(); });
+function renderMpCard(){
+  const el=$('mp-panel'); if(!el) return;
+  const online=room && room.kind==='rtdb';
+  el.hidden=!(online && save.mode==='mp');
+  if(el.hidden){ mpSig=''; return; }
+  // only rebuild when something visible changed, so typing in the code box is never interrupted
+  const sig=[fbUser?fbUser.uid:'', net.code, net.map, save.map, mpMsg, net.peersList.map(p=>p.peer+':'+peerName(p.peer)+':'+(p.presence&&p.presence.playing?1:0)).join(',')].join('|');
+  if(sig===mpSig) return; mpSig=sig;
+  el.innerHTML='';
+  const add=h=>{ const d=document.createElement('div'); d.innerHTML=h; while(d.firstChild) el.appendChild(d.firstChild); };
+  const B=(label,fn,cls)=>{ const b=document.createElement('button'); b.className='abtn'+(cls?' '+cls:''); b.textContent=label; b.onclick=fn; return b; };
+  if(!fbUser){
+    add(`<div class="mp-title">Online rooms</div><div class="mp-sub">Log in to play against people on other computers — rooms are tied to accounts.</div>`);
+    const row=document.createElement('div'); row.className='mp-row'; row.appendChild(B('Log in / Sign up',()=>{ guest=false; renderAcct(); },'primary')); el.appendChild(row);
+    return;
+  }
+  if(!net.code){
+    const mapName=(MAP_LIST.find(m=>m.id===save.map)||{}).name||save.map;
+    add(`<div class="mp-title">Online rooms</div><div class="mp-sub">Create a room on <b>${esc(mapName)}</b> and share its code, join a friend's code, or quick match into any open room on this map.</div>`);
+    const row=document.createElement('div'); row.className='mp-row';
+    row.appendChild(B('Create room',createRoom,'primary')); row.appendChild(B('Quick match',quickMatch));
+    const inp=document.createElement('input'); inp.id='mp-code-in'; inp.placeholder='CODE'; inp.maxLength=4; inp.autocomplete='off'; row.appendChild(inp);
+    row.appendChild(B('Join',()=>joinRoom(inp.value)));
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') joinRoom(inp.value); });
+    el.appendChild(row);
+    if(mpMsg) add(`<div class="mp-sub ${/^Looking/.test(mpMsg)?'':'bad'}">${esc(mpMsg)}</div>`);
+    return;
+  }
+  const mapName=(MAP_LIST.find(m=>m.id===net.map)||{}).name||net.map;
+  const players=net.peersList;
+  add(`<div class="mp-row"><span class="mp-title">Room</span><span class="mp-code">${esc(net.code)}</span><span class="mp-sub">on <b>${esc(mapName)}</b> · ${players.length} player${players.length===1?'':'s'} · share the code, then everyone hits Deploy</span></div>`);
+  const list=document.createElement('div'); list.className='mp-players';
+  players.forEach(p=>{ const sp=document.createElement('span'); sp.className='mp-player'+(p.sameTab?' me':'')+(p.presence&&p.presence.playing?' playing':'');
+    sp.innerHTML=`${esc(peerName(p.peer))}${p.sameTab?'<small>you</small>':''}${p.presence&&p.presence.playing?'<small>in battle</small>':'<small>in lobby</small>'}`; list.appendChild(sp); });
+  el.appendChild(list);
+  const row=document.createElement('div'); row.className='mp-row';
+  row.appendChild(B('Copy code',async ev=>{ try{ await navigator.clipboard.writeText(net.code); ev.target.textContent='Copied!'; setTimeout(()=>{ ev.target.textContent='Copy code'; },1200); }catch(e){} }));
+  row.appendChild(B('Leave room',leaveRoom));
+  el.appendChild(row);
+  if(mpMsg) add(`<div class="mp-sub bad">${esc(mpMsg)}</div>`);
+}
 function mpPlayingPeers(){
   if(!room) return [];
   // exclude only THIS tab — your own other tabs/devices are valid rivals (and how you test)
@@ -2450,7 +2627,12 @@ function animate(){
 animate();
 
 /* ================= WIRING ================= */
-$('play').onclick=()=>{ sfx('buy'); startGame(); };
+$('play').onclick=async()=>{
+  if(save.mode==='mp' && room && room.kind==='rtdb' && !net.code){   // not in a room yet: quick match first
+    const ok=await quickMatch(); if(!ok) return;
+  }
+  sfx('buy'); startGame();
+};
 $('resume').onclick=()=>{ showPause(false); lockPointer(); };
 $('leave').onclick=()=>{ backToLobby(); };
 $('again').onclick=()=>{ startGame(); };
@@ -2474,6 +2656,9 @@ canvas.addEventListener('click',()=>{ if(G && !G.over && !G.paused && document.p
       room=await window.claude.use('room');
   }catch(e){ room=null; }
   const st=$('mp-status');
+  if(!room && ensureFirebase() && firebase.database){
+    try{ rtdb=firebase.database(); room=makeRtdbRoom(); }catch(e){ rtdb=null; room=null; }
+  }
   if(!room){
     renderRivalLobby([]);
     st.textContent='Solo only in this view';
@@ -2482,10 +2667,16 @@ canvas.addEventListener('click',()=>{ if(G && !G.over && !G.paused && document.p
     return;
   }
   st.classList.remove('off'); st.textContent='Online';
+  if(room.kind==='rtdb'){
+    const refreshStatus=()=>{ st.textContent=!fbUser?'Online — log in to play':net.code?`In room ${net.code} · ${net.peersList.length} player${net.peersList.length===1?'':'s'}`:'Online — create or join a room'; renderMpCard(); };
+    refreshStatus(); setInterval(refreshStatus,1500);
+  }
+  renderModes();
   room.onPeers(ch=>{
     renderRivalLobby(ch.peers);
     const me=ch.peers.find(p=>p.isMe && p.sameTab);
     if(me) myPeerId=me.peer;
+    if(room.kind==='rtdb') return;
     const others=ch.peers.filter(p=>p.kind==='viewer' && !p.sameTab);
     const playing=others.filter(p=>p.presence && p.presence.playing===true);
     st.textContent= others.length>0

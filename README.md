@@ -10,7 +10,7 @@ Open `index.html` in a browser (or serve the folder with any static server). Fir
 - **Armory**: 27 weapons from the free Blaster up to the Railgun — higher damage costs more bombs. Hold to fire. Every weapon has a **Test Fire** button for a free practice session (no purchases, no rewards).
 - **Cosmetics**: 35 per-gun skins and 26 universal wraps (Gold Plate, Galaxy, Hologram, Emberglass…).
 - **Maps**: Arena, Docks, Splash (ride the slides!), Construction, Neon District, Glacier, Temple.
-- **Modes**: Solo vs Bots or live Multiplayer on the published Claude artifact.
+- **Modes**: Solo vs Bots, or **online Multiplayer** — create a room, share its 4-letter code (or Quick match) and play live against people on any computer, anywhere.
 - **Unlimited levels**: eliminations and round wins award XP; your level raises bot difficulty and adds rivals over time.
 - **Monthly Golden Case Day**: one day a month the lobby runs 25 hard tasks; every five completed tasks earns a case (max 5) with all contents and exact odds shown up front.
 
@@ -38,6 +38,14 @@ The game picks a save mode automatically:
 7. **Authentication → Settings → Authorized domains → Add domain**: add where the game is hosted, e.g. `caroline6741.github.io`. (`localhost` is already allowed for testing.)
 
 Reload the game — the panel under the wallet now shows **Log in / Sign up**. Sign up once, then log in from any laptop and your bombs, guns, skins, XP and rounds-won carry over. Changes sync live between open devices.
+
+### Online multiplayer (Firebase Realtime Database)
+
+Rooms live in Firebase **Realtime Database** (a separate product from Firestore, built for fast tiny updates). Each player in a room writes their position ~12×/sec to `rooms/<code>/players/<session>`; hits, deaths and round wins are small records under `rooms/<code>/events`. A player's node is removed automatically when their tab closes (`onDisconnect`), and the last player out deletes the room.
+
+Setup is already done for `caroline-s-game`. For a new project: **Build → Realtime Database → Create database**, then deploy [`database.rules.json`](database.rules.json) (`firebase deploy --only database`) and add the `databaseURL` to [`firebase-config.js`](firebase-config.js). Players must be logged in to use rooms.
+
+There is no authoritative game server, so a determined cheater could edit their own browser — fine for friends and classrooms. The upgrade path, if it ever matters, is a dedicated WebSocket server; the room/lobby design stays the same.
 
 ### Optional: host on Firebase instead of GitHub Pages
 
