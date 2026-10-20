@@ -183,6 +183,27 @@
   .cos-for{color:var(--dim); font-size:11px; letter-spacing:.5px; text-transform:uppercase;}
   .cos-desc{color:var(--dim); font-size:11.5px; line-height:1.4;}
   .cos .wbtn{padding:8px; font-size:12.5px; margin-top:0;}
+  /* ---------- plaza (walkable social lobby) ---------- */
+  #plaza-hud{position:fixed; inset:0; pointer-events:none; z-index:15; display:none; font-variant-numeric:tabular-nums;}
+  #plaza-tags{position:absolute; inset:0; overflow:hidden;}
+  .pl-top{position:absolute; left:18px; top:14px; display:flex; flex-direction:column; gap:6px;}
+  .pl-chip{background:rgba(16,20,28,.75); border:1px solid var(--line); border-radius:10px; padding:8px 12px; font-size:12.5px; color:var(--text); backdrop-filter:blur(3px);}
+  .pl-chip b{color:var(--own);}
+  #plaza-prompt{position:absolute; left:50%; top:57%; transform:translateX(-50%); background:rgba(16,20,28,.85); border:1px solid var(--accent); border-radius:20px;
+    padding:8px 16px; font-size:13px; color:var(--text); white-space:nowrap;}
+  #plaza-prompt b{color:var(--accent2);}
+  #plaza-xhair{position:absolute; left:50%; top:50%; width:7px; height:7px; margin:-3.5px; border-radius:50%; background:#fff; box-shadow:0 0 4px rgba(0,0,0,.9);}
+  #plaza-hint{position:absolute; left:50%; bottom:18px; transform:translateX(-50%); color:rgba(232,236,244,.8); font-size:12px; background:rgba(16,20,28,.65); border-radius:20px; padding:6px 14px; white-space:nowrap;}
+  #plaza-hint b{color:var(--accent2);}
+  #plaza-chat{position:absolute; left:18px; bottom:60px; display:flex; flex-direction:column; gap:4px; max-width:360px;}
+  #plaza-chat div{background:rgba(16,20,28,.7); border-left:3px solid var(--own); border-radius:6px; padding:4px 10px; font-size:12.5px; animation:feedin .2s ease-out;}
+  #plaza-chat div b{color:var(--own);}
+  .tag3d .tb{max-width:220px; white-space:normal; text-align:center; background:#fff; color:#10141c; border-radius:12px; padding:5px 10px; font-size:12px; font-weight:500; margin-bottom:4px; box-shadow:0 2px 8px rgba(0,0,0,.35);}
+  .tag3d.plaza .th{display:none;}
+  .tag3d.self .tn{color:var(--own);}
+  #chatlayer{position:fixed; inset:0; pointer-events:none; z-index:17;}
+  .wm-buyrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .wm-buyrow .wbtn{margin-top:0; padding:9px 14px;}
   /* ---------- name tags, chat, server browser ---------- */
   #tags{position:absolute; inset:0; overflow:hidden;}
   .tag3d{position:absolute; transform:translate(-50%,-100%); display:flex; flex-direction:column; align-items:center; gap:3px; pointer-events:none;
@@ -191,7 +212,7 @@
   .tag3d .th{width:56px; height:5px; border-radius:3px; background:rgba(0,0,0,.55); overflow:hidden; border:1px solid rgba(0,0,0,.4);}
   .tag3d .th i{display:block; height:100%; background:#4ade80;}
   .tag3d .th i.low{background:var(--bad);}
-  #chatbox{position:absolute; left:18px; bottom:96px; width:min(360px,70vw); pointer-events:auto;}
+  #chatbox{position:fixed; left:18px; bottom:96px; width:min(360px,70vw); pointer-events:auto;}
   #chat-in{width:100%; background:rgba(16,20,28,.9); border:1px solid var(--accent); border-radius:8px; color:var(--text); padding:9px 12px;
     font-family:Rubik,sans-serif; font-size:14px;}
   #chat-in:focus{outline:none; box-shadow:0 0 0 3px rgba(255,122,47,.25);}
@@ -511,9 +532,9 @@
     <div class="rival-avatars" id="rival-avatars" aria-label="Players in lobby"></div>
     <button class="rival-join" id="rival-join" type="button">Join multiplayer</button>
   </div>
-  <div class="lobby-world-help"><b>Lobby controls:</b> use <kbd>W A S D</kbd> to explore, click a weapon to customize, and walk to a mode pad before deploying. <button class="rival-join" id="explore-lobby" type="button">Explore lobby</button></div>
+  <div class="lobby-world-help"><b>Walk the plaza:</b> look around with the mouse, <kbd>W A S D</kbd> to move, <kbd>Space</kbd> to jump, click a weapon pedestal to buy or equip it, and step onto a game pad to play. <button class="rival-join" id="explore-lobby" type="button">Explore the plaza</button></div>
   <div class="lobby-stage" aria-label="3D lobby view">
-    <div><div class="lobby-stage-title">3D social plaza</div><div class="lobby-stage-copy">Your avatar spawns here before every match. Walk around the shop and game-mode pads to get ready.<small>WASD / arrow keys move &middot; click a weapon to customize</small></div></div>
+    <div><div class="lobby-stage-title">3D social plaza</div><div class="lobby-stage-copy">Everyone online stands in this plaza. Walk into the gear shop to buy and equip guns, chat with rivals, and step on a game pad to play.<small>Press <b>Explore the plaza</b> to walk in &middot; Esc brings this menu back</small></div></div>
     <div class="lobby-stage-title">LOBBY ONLINE</div>
   </div>
   <h1 class="logo">Blast <em>Rivals</em></h1>
@@ -592,6 +613,17 @@
   </div>
 </div>
 
+<!-- ============ PLAZA HUD (walking around the social lobby) ============ -->
+<div id="plaza-hud">
+  <div id="plaza-tags"></div>
+  <div class="pl-top"><div class="pl-chip" id="plaza-who">Plaza</div><div class="pl-chip" id="plaza-wallet">💣 0</div></div>
+  <div id="plaza-xhair"></div>
+  <div id="plaza-prompt" hidden></div>
+  <div id="plaza-chat"></div>
+  <div id="plaza-hint"><b>WASD</b> move · <b>Space</b> jump · <b>Mouse</b> look · <b>Click / E</b> use · <b>Enter</b> chat · <b>Esc</b> menu</div>
+</div>
+<div id="chatlayer"><div id="chatbox" hidden><input id="chat-in" maxlength="120" placeholder="Say something… (Enter to send, Esc to close)" autocomplete="off"></div></div>
+
 <!-- ============ GAME LOBBY (host screen) ============ -->
 <div class="overlay gamelobby" id="gamelobby" style="display:none">
   <div class="gl-card">
@@ -628,7 +660,6 @@
   <div id="feed"></div>
   <div id="chat-hint" hidden>Press <b>Enter</b> to chat</div>
   <div id="lock-hint" hidden>Click anywhere to aim</div>
-  <div id="chatbox" hidden><input id="chat-in" maxlength="120" placeholder="Say something… (Enter to send, Esc to close)" autocomplete="off"></div>
   <div id="slots"></div>
 </div>
 
@@ -1052,6 +1083,7 @@ async function fbLogin(){
   catch(e){ fbMsg=fbFriendly(e); setAcct('fb-out'); }
 }
 async function fbLogout(){
+  if(typeof hubLeave==='function') hubLeave();
   if(typeof leaveRoom==='function') await leaveRoom();
   try{ await fbAuth.signOut(); }catch(e){}
 }
@@ -1070,6 +1102,7 @@ async function fbOnUser(user){
     if(signupBody){ const body=signupBody; signupBody=null; await fbDocRef().set(body); resetSave(); mergeProfile(body); }
     else { const snap=await fbDocRef().get(); resetSave(); if(snap.exists) mergeProfile(snap.data()); }   // the account replaces local data
     persist(); refreshLobbyFromSave(); setAcct('fb-in'); subscribeProfile();
+    if(G && G.lobby) hubJoin();
     if(pendingJoin && rtdb){ const code=pendingJoin; pendingJoin=null; save.mode='mp'; persist(); renderModes(); await joinRoom(code); }
   }catch(e){ setAcct('error'); }
 }
@@ -1355,6 +1388,14 @@ function openWeaponModal(wid){
   $('weapon-modal-sub').textContent=`Choose finishes built specifically for the ${w.name}. Purchases use bombs from your wallet.`;
   $('weapon-modal-art').src=modalOptionImage(wid); $('weapon-modal-art').alt=`${w.name} artwork`;
   $('weapon-modal-stats').innerHTML=`<div class="wep-name">${w.name}<span class="wep-tag">${wcat(w.id)}</span></div><div class="weapon-modal-sub">${w.desc}<br>${w.dmg} damage · ${w.mag} rounds · ${Math.round(w.dmg*w.pellets/w.cd)} DPS</div>`;
+  { const row=document.createElement('div'); row.className='wm-buyrow';
+    const owned=save.owned.includes(wid), eq=save.equipped===wid;
+    const b=document.createElement('button'); b.className='wbtn '+(eq?'equipped':owned?'equip':'buy');
+    b.textContent=eq?'EQUIPPED':owned?'EQUIP':(w.price?`BUY — 💣 ${fmt(w.price)}`:'GET FREE'); if(!owned) b.disabled=save.bombs<w.price;
+    b.onclick=()=>{ if(eq) return; if(!owned){ if(save.bombs<w.price) return; save.bombs-=w.price; save.owned.push(wid); } save.equipped=wid; persist(); sfx('buy'); renderWallet(); renderShop(); openWeaponModal(wid); };
+    row.appendChild(b);
+    const t=document.createElement('button'); t.className='wbtn test'; t.textContent=owned?'PRACTICE RANGE':'TRY IT FREE'; t.onclick=()=>{ closeWeaponModal(); startGame(wid,true); };
+    row.appendChild(t); $('weapon-modal-stats').appendChild(row); }
   const skinEl=$('weapon-modal-skins'); skinEl.innerHTML='';
   if(!skins.length) skinEl.innerHTML='<div class="empty">No skins are available for this weapon yet.</div>';
   skins.forEach(s=>{
@@ -1379,10 +1420,10 @@ function openWeaponModal(wid){
   });
   $('weapon-modal').classList.add('open');
 }
-function closeWeaponModal(){ $('weapon-modal').classList.remove('open'); }
+function closeWeaponModal(){ $('weapon-modal').classList.remove('open'); if(typeof exploring!=='undefined' && exploring && G && G.lobby) lockPointer(); }
 $('weapon-modal-close').onclick=closeWeaponModal;
 $('weapon-modal').addEventListener('click',e=>{ if(e.target.id==='weapon-modal') closeWeaponModal(); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('weapon-modal').classList.contains('open')) closeWeaponModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('weapon-modal').classList.contains('open')){ closeWeaponModal(); e.stopPropagation(); } });   // only the modal closes; the plaza stays
 /* armory toolbar wiring */
 $('shop-q').addEventListener('input',e=>{ shopUI.q=e.target.value; $('shop-clr').hidden=!shopUI.q; renderShop(); });
 $('shop-clr').onclick=()=>{ shopUI.q=''; $('shop-q').value=''; $('shop-clr').hidden=true; renderShop(); $('shop-q').focus(); };
@@ -2042,7 +2083,7 @@ let preview=null, cdTimer=null;
 function hostSid(){ const ps=net.peersList.slice().sort((a,b)=>(+(a.presence&&a.presence.t)||0)-(+(b.presence&&b.presence.t)||0)); return ps.length?ps[0].peer:null; }
 function isHost(){ return !!net.code && hostSid()===net.sid; }
 function startPreview(mapId){
-  if(G && G.lobby){ G=null; if(lobbyAvatar && scene) scene.remove(lobbyAvatar); lobbyAvatar=null; remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); }); remotes.clear(); }
+  if(G && G.lobby){ exitExplore(); hubLeave(); $('plaza-tags').innerHTML=''; ownTag=null; G=null; if(lobbyAvatar && scene) scene.remove(lobbyAvatar); lobbyAvatar=null; remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); }); remotes.clear(); }
   if(G) return;
   if(vm){ camera.remove(vm); vm=null; }
   scene=new THREE.Scene(); colliders=[]; solidMeshes=[]; tracers.length=0; particles.length=0;
@@ -2224,7 +2265,7 @@ function syncRemotes(){
     if(!r){
       r={mesh:makeRig(peerColor(p.peer)), tx:0,ty:0,tz:0,tyaw:0, name:peerName(p.peer), snaps:[], phase:0, wep:null, hp:100, tag:null};
       if(typeof pr.x==='number'){ r.mesh.position.set(+pr.x||0,Math.max(0,+pr.y||0),+pr.z||0); }
-      r.tag=document.createElement('div'); r.tag.className='tag3d'; r.tag.innerHTML='<span class="tn"></span><span class="th"><i></i></span>'; $('tags').appendChild(r.tag);
+      r.tag=makeTag($('tags'),'');
       remotes.set(p.peer,r);
     }
     if(typeof pr.x==='number'&&isFinite(pr.x)){
@@ -2271,14 +2312,15 @@ function updateTags(){
   const W=innerWidth, H=innerHeight;
   remotes.forEach(r=>{
     if(!r.tag) return;
+    if(!r.tag.children[2]) return;
     if(!r.mesh.visible){ r.tag.hidden=true; return; }
     _tagV.set(r.mesh.position.x, r.mesh.position.y+2.55, r.mesh.position.z).project(camera);
     if(_tagV.z>1 || _tagV.x<-1.1 || _tagV.x>1.1 || _tagV.y<-1.2 || _tagV.y>1.2){ r.tag.hidden=true; return; }
     const d=camera.position.distanceTo(r.mesh.position), sc=Math.max(0.6,Math.min(1.15,14/Math.max(d,1)+0.45));
     r.tag.hidden=false;
     r.tag.style.transform=`translate(-50%,-100%) translate(${((_tagV.x+1)/2*W).toFixed(0)}px,${((1-_tagV.y)/2*H).toFixed(0)}px) scale(${sc.toFixed(2)})`;
-    const tn=r.tag.firstChild; if(tn.textContent!==r.name) tn.textContent=r.name;
-    const bar=r.tag.lastChild.firstChild; bar.style.width=r.hp+'%'; bar.className=r.hp<=30?'low':'';
+    const tn=r.tag.children[1]; if(tn.textContent!==r.name) tn.textContent=r.name;
+    const bar=r.tag.children[2].firstChild; bar.style.width=r.hp+'%'; bar.className=r.hp<=30?'low':'';
   });
 }
 function remoteParts(){
@@ -2323,17 +2365,26 @@ function sfx(type){
 const KEY={};
 /* ---- chat (in match and in the game lobby) ---- */
 let chatting=false; const chatLog=[];
-function openChat(){ if(!G || !inMp() || G.over) return; chatting=true; for(const k in KEY) KEY[k]=false; firing=false; $('chatbox').hidden=false; $('chat-hint').hidden=true; $('chat-in').value=''; $('chat-in').focus(); }
+function chatAvailable(){ return !!G && !G.over && (inMp() || (G.lobby && exploring && (hubSid || (room && room.kind!=='rtdb')))); }
+function openChat(){ if(!chatAvailable()) return; chatting=true; for(const k in KEY) KEY[k]=false; firing=false; $('chatbox').hidden=false; $('chat-hint').hidden=true; $('chat-in').value=''; $('chat-in').focus(); }
 function closeChat(){ chatting=false; const cb=$('chatbox'); if(cb){ cb.hidden=true; } if(G && inMp() && !G.over) $('chat-hint').hidden=false; }
+function chatBoxEnter(){ sendChat($('chat-in').value); closeChat(); if(G && (inMp() || (G.lobby && exploring))) lockPointer(); }
 function sendChat(text){
   const m=String(text||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,120);
-  if(!m || !room) return;
+  if(!m) return;
+  if(G && G.lobby){
+    mySay={m,t:Date.now()}; pushPlazaChat(save.name,m);
+    if(hubSid) hubSend({say:m, sayAt:mySay.t}); else if(room) room.emit('chat',{m}).catch(()=>{});
+    return;
+  }
+  if(!room) return;
   room.emit('chat',{m}).catch(()=>{});
   if(room.kind!=='rtdb') pushChat(save.name,m,true);     // the database bus echoes our own message; the artifact bus does too but only once registered
 }
 function pushChat(name,m,mine){
   chatLog.push({name,m,mine}); if(chatLog.length>40) chatLog.shift();
-  if(G && !G.lobby) feed(`<b>${esc(name)}</b>: ${esc(m)}`,false,'chat');
+  if(G && G.lobby){ if(!mine) pushPlazaChat(name,m); }
+  else if(G) feed(`<b>${esc(name)}</b>: ${esc(m)}`,false,'chat');
   const gl=$('gl-chat'); if(gl && $('gamelobby').style.display!=='none'){ renderLobbyChat(); }
 }
 function renderLobbyChat(){
@@ -2343,7 +2394,7 @@ function renderLobbyChat(){
 }
 $('chat-in').addEventListener('keydown',e=>{
   e.stopPropagation();
-  if(e.key==='Enter'){ sendChat($('chat-in').value); closeChat(); lockPointer(); }
+  if(e.key==='Enter'){ chatBoxEnter(); }
   else if(e.key==='Escape'){ closeChat(); lockPointer(); }
 });
 $('gl-chat-send').onclick=()=>{ sendChat($('gl-chat-in').value); $('gl-chat-in').value=''; };
@@ -2351,7 +2402,9 @@ $('gl-chat-in').addEventListener('keydown',e=>{ e.stopPropagation(); if(e.key===
 function typingInField(e){ const t=e.target; return !!(t && /^(INPUT|TEXTAREA|SELECT)$/i.test(t.tagName)); }
 addEventListener('keydown',e=>{
   if(chatting || typingInField(e)) return;
-  if(G && !G.over && inMp() && (e.key==='Enter' || (e.code==='KeyT' && !e.repeat))){ e.preventDefault(); openChat(); return; }
+  if(chatAvailable() && (e.key==='Enter' || (e.code==='KeyT' && !e.repeat))){ e.preventDefault(); openChat(); return; }
+  if(G && G.lobby && exploring && (e.code==='KeyE' || e.key==='e' || e.key==='E') && !e.repeat){ interactLobby(); return; }
+  if(G && G.lobby && exploring && e.key==='Escape' && document.pointerLockElement!==canvas){ if($('weapon-modal').classList.contains('open')) closeWeaponModal(); else exitExplore(); return; }
   KEY[e.code]=true;
   if(G && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   if(G && !G.over){
@@ -2365,16 +2418,23 @@ addEventListener('blur',()=>{ Object.keys(KEY).forEach(k=>KEY[k]=false); firing=
 
 let yaw=0, pitch=0;
 document.addEventListener('mousemove',e=>{
-  if(!G || document.pointerLockElement!==canvas) return;
+  if(!G) return;
+  if(document.pointerLockElement!==canvas){ if(!(G.lobby && exploring && dragLook)) return; }   // no lock: drag to look
   yaw-=e.movementX*0.0022; pitch-=e.movementY*0.0022;
   pitch=Math.max(-1.45,Math.min(1.45,pitch));
 });
 let firing=false;
-addEventListener('mousedown',e=>{ if(G && document.pointerLockElement===canvas && e.button===0){ if(G.lobby){ interactLobby(); return; } firing=true; tryFire(); } });
-addEventListener('mouseup',e=>{ if(e.button===0) firing=false; });
+addEventListener('mousedown',e=>{
+  if(G && G.lobby && exploring && e.button===0 && !(e.target && e.target.closest('button,input,select,a,.weapon-modal,#chatbox'))){ dragLook=true; interactLobby(); return; }
+  if(G && document.pointerLockElement===canvas && e.button===0){ if(G.lobby) return; firing=true; tryFire(); }
+});
+addEventListener('mouseup',e=>{ if(e.button===0){ firing=false; dragLook=false; } });
 document.addEventListener('pointerlockchange',()=>{
+  const locked=document.pointerLockElement===canvas;
+  if(locked){ hadLock=true; return; }
+  const lost=hadLock; hadLock=false;
   if(!G || G.over) return;
-  if(G.lobby) return;
+  if(G.lobby){ if(exploring && lost && !chatting && !$('weapon-modal').classList.contains('open')) exitExplore(); return; }
   if(document.pointerLockElement!==canvas){ showPause(true); }
 });
 
@@ -2476,29 +2536,115 @@ function lobbyWeapon(wid,x,z){
   const grip=new THREE.Mesh(new THREE.BoxGeometry(.28,.65,.38),new THREE.MeshLambertMaterial({color:0x171b26})); grip.position.set(x,.45,z-.35); grip.rotation.y=Math.PI/2; scene.add(grip);
   const t=lobbyLabel(w.name,w.color); t.position.set(x,2.05,z); scene.add(t); gun.userData.lobbyWeapon=wid; lobbyInteractables.push(gun);
 }
-function publishLobbyPresence(){
-  if(!room||!G||!G.lobby) return;
-  room.presence({lobby:true,playing:false,name:save.name,format:save.matchFormat||'1v1',x:+G.pos.x.toFixed(2),y:0,z:+G.pos.z.toFixed(2),yaw:+yaw.toFixed(3)}).catch(()=>{});
+/* The plaza is one shared place for everyone who is online: each player keeps a node under
+   hub/players (removed automatically on disconnect) and reads everyone else's. */
+let hadLock=false, dragLook=false;
+let exploring=false, hubSid=null, hubPlayers={}, hubUnsub=null, hubLastSent='', hubDirty=false, ownTag=null, mySay=null;
+function hubReady(){ return !!(rtdb && fbUser); }
+function hubJoin(){
+  if(!hubReady() || hubSid || !G || !G.lobby) return;
+  const sid=fbUser.uid.slice(0,6)+'-'+Math.random().toString(36).slice(2,7), me=rtdb.ref('hub/players/'+sid);
+  hubSid=sid;
+  me.set({uid:fbUser.uid, name:save.name, x:+G.pos.x.toFixed(2), y:0, z:+G.pos.z.toFixed(2), yaw:+yaw.toFixed(3), t:Date.now()}).catch(()=>{ if(hubSid===sid) hubSid=null; });
+  me.onDisconnect().remove();
+  const ref=rtdb.ref('hub/players'); const h=sn=>{ hubPlayers=sn.val()||{}; hubDirty=true; renderPlazaCount(); };
+  ref.on('value',h); hubUnsub=()=>ref.off('value',h);
 }
+function hubLeave(){
+  if(hubUnsub){ hubUnsub(); hubUnsub=null; }
+  if(hubSid && rtdb) rtdb.ref('hub/players/'+hubSid).remove().catch(()=>{});
+  hubSid=null; hubPlayers={}; hubLastSent=''; renderPlazaCount();
+}
+function hubSend(patch){ if(!hubSid || !rtdb) return; rtdb.ref('hub/players/'+hubSid).update(patch).catch(()=>{}); }
+function plazaPeers(){
+  if(hubSid) return Object.keys(hubPlayers).filter(k=>k!==hubSid).map(k=>({peer:k, presence:hubPlayers[k], name:String(hubPlayers[k].name||'Rival').replace(/[^\w \-]/g,'').slice(0,14)||'Rival'}));
+  if(room && room.kind!=='rtdb') return room.peers().filter(p=>p.kind==='viewer'&&!p.sameTab&&p.presence&&p.presence.lobby===true&&!p.presence.playing).map(p=>({peer:p.peer, presence:p.presence, name:peerName(p.peer)}));
+  return [];
+}
+function renderPlazaCount(){
+  const n=plazaPeers().length;
+  const who=$('plaza-who'); if(who) who.innerHTML=`<b>${esc(save.name)}</b> · ${n?`${n} other${n===1?'':'s'} in the plaza`:'you are the only one here'}`;
+  const wal=$('plaza-wallet'); if(wal) wal.textContent=`💣 ${fmt(save.bombs)}`;
+  if(hubSid){
+    const sub=$('rival-lobby-sub'), av=$('rival-avatars');
+    if(sub) sub.textContent=n?`${n} player${n===1?' is':'s are'} in the plaza right now — press Explore to walk over and say hi.`:'Nobody else is in the plaza yet — rivals appear here as soon as they log in.';
+    if(av) av.innerHTML=plazaPeers().slice(0,5).map(p=>`<span class="rival-dot" title="${esc(p.name)}">${esc(p.name.slice(0,1).toUpperCase())}</span>`).join('');
+  }
+}
+function publishLobbyPresence(){
+  if(!G||!G.lobby) return;
+  const p={x:+G.pos.x.toFixed(2), y:+G.pos.y.toFixed(2), z:+G.pos.z.toFixed(2), yaw:+yaw.toFixed(3)};
+  if(hubSid){ const key=p.x+','+p.y+','+p.z+','+p.yaw+','+save.name; if(key!==hubLastSent){ hubLastSent=key; hubSend({...p, name:save.name, t:Date.now()}); } return; }
+  if(room && room.kind!=='rtdb') room.presence({lobby:true,playing:false,name:save.name,format:save.matchFormat||'1v1',...p}).catch(()=>{});
+}
+function makeTag(layer,cls){ const t=document.createElement('div'); t.className='tag3d '+cls; t.innerHTML='<span class="tb" hidden></span><span class="tn"></span><span class="th"><i></i></span>'; layer.appendChild(t); return t; }
 function syncLobbyRemotes(){
-  if(!room) return;
   const live=new Set();
-  room.peers().filter(p=>p.kind==='viewer'&&!p.sameTab&&p.presence&&p.presence.lobby===true&&!p.presence.playing).forEach(p=>{
-    live.add(p.peer); let r=remotes.get(p.peer);
-    if(!r){ r={mesh:makeRig(peerColor(p.peer)),tx:0,ty:0,tz:0,tyaw:0,name:peerName(p.peer)}; remotes.set(p.peer,r); }
-    const pr=p.presence; r.tx=+pr.x||0; r.ty=0; r.tz=+pr.z||0; r.tyaw=+pr.yaw||0; r.name=peerName(p.peer); r.mesh.visible=true;
+  plazaPeers().forEach(p=>{
+    live.add(p.peer); let r=remotes.get(p.peer); const pr=p.presence||{};
+    if(!r){
+      r={mesh:makeRig(peerColor(p.peer)), name:p.name, snaps:[], phase:0, wep:null, hp:100, tag:makeTag($('plaza-tags'),'plaza'), say:null, sayAt:0};
+      r.mesh.position.set(+pr.x||0, Math.max(0,+pr.y||0), +pr.z||0);
+      remotes.set(p.peer,r);
+    }
+    const last=r.snaps[r.snaps.length-1], x=+pr.x||0, y=Math.max(0,+pr.y||0), z=+pr.z||0, yaw2=+pr.yaw||0;
+    if(!last || last.x!==x || last.y!==y || last.z!==z || last.yaw!==yaw2){ r.snaps.push({t:performance.now(),x,y,z,yaw:yaw2}); if(r.snaps.length>12) r.snaps.shift(); }
+    r.name=p.name; r.mesh.visible=true;
+    if(typeof pr.say==='string' && +pr.sayAt && +pr.sayAt!==r.sayAt){ r.sayAt=+pr.sayAt; r.say=pr.say.slice(0,120); if(Date.now()-r.sayAt<15000) pushPlazaChat(r.name,r.say); }
   });
-  remotes.forEach((r,pid)=>{ if(!live.has(pid)){ scene.remove(r.mesh); remotes.delete(pid); } });
+  remotes.forEach((r,pid)=>{ if(!live.has(pid)){ scene && scene.remove(r.mesh); if(r.tag) r.tag.remove(); remotes.delete(pid); } });
+}
+function pushPlazaChat(name,m){
+  const el=$('plaza-chat'); if(!el) return;
+  const d=document.createElement('div'); d.innerHTML=`<b>${esc(name)}</b>: ${esc(m)}`; el.appendChild(d);
+  while(el.children.length>6) el.firstChild.remove();
+  setTimeout(()=>{ d.style.transition='opacity .6s'; d.style.opacity='0'; setTimeout(()=>d.remove(),600); },9000);
+}
+function updateBubbles(){
+  const now=Date.now();
+  remotes.forEach(r=>{ if(!r.tag) return; const b=r.tag.firstChild; const on=r.say && now-r.sayAt<6000; b.hidden=!on; if(on && b.textContent!==r.say) b.textContent=r.say; });
+  if(ownTag && lobbyAvatar){
+    const W=innerWidth,H=innerHeight;
+    _tagV.set(lobbyAvatar.position.x, lobbyAvatar.position.y+2.55, lobbyAvatar.position.z).project(camera);
+    const vis=_tagV.z<1; ownTag.hidden=!vis;
+    if(vis) ownTag.style.transform=`translate(-50%,-100%) translate(${((_tagV.x+1)/2*W).toFixed(0)}px,${((1-_tagV.y)/2*H).toFixed(0)}px)`;
+    const b=ownTag.firstChild, on=mySay && now-mySay.t<6000; b.hidden=!on; if(on) b.textContent=mySay.m;
+  }
+}
+function enterExplore(){
+  if(!G || !G.lobby) return;
+  exploring=true; closeWeaponModal();
+  $('lobby').style.display='none'; $('plaza-hud').style.display='block'; renderPlazaCount();
+  lockPointer();
+}
+function exitExplore(){
+  exploring=false; closeChat();
+  $('plaza-hud').style.display='none'; $('plaza-prompt').hidden=true;
+  if(G && G.lobby) $('lobby').style.display='flex';
+  if(document.pointerLockElement===canvas) document.exitPointerLock();
+}
+function lobbyAim(){
+  lobbyRay.setFromCamera(new THREE.Vector2(0,0),camera);
+  const hit=lobbyRay.intersectObjects(lobbyInteractables,false)[0];
+  return hit && hit.distance<16 ? hit.object : null;
+}
+function lobbyPortal(label){
+  selectLobbyFormat(label);
+  exitExplore();
+  if(label==='1v1'){ startGame(); return; }
+  if(room && room.kind==='rtdb'){ if(!fbUser){ mpMsg='Log in to play online.'; renderMpCard(); document.getElementById('mode-section').scrollIntoView({behavior:'smooth',block:'center'}); return; }
+    (async()=>{ if(!net.code){ const ok=await quickMatch(); if(!ok) return; } showGameLobby(); })(); }
+  else document.getElementById('mode-section').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function selectLobbyFormat(format){
   save.matchFormat=format; save.mode=format==='1v1'?'solo':'mp'; persist(); renderModes(); sfx('buy');
   const sub=$('rival-lobby-sub'); if(sub) sub.textContent=`${format} pad selected — deploy when your loadout is ready.`;
 }
 function interactLobby(){
-  if(!G||!G.lobby) return;
-  lobbyRay.setFromCamera(new THREE.Vector2(0,0),camera); const hit=lobbyRay.intersectObjects(lobbyInteractables,false)[0]; if(!hit) return;
-  if(hit.object.userData.lobbyWeapon){ openWeaponModal(hit.object.userData.lobbyWeapon); sfx('buy'); }
-  else if(hit.object.userData.lobbyFormat) selectLobbyFormat(hit.object.userData.lobbyFormat);
+  if(!G||!G.lobby||!exploring) return;
+  const o=lobbyAim(); if(!o) return;
+  if(o.userData.lobbyWeapon){ openWeaponModal(o.userData.lobbyWeapon); sfx('buy'); }
+  else if(o.userData.lobbyFormat) lobbyPortal(o.userData.lobbyFormat);
 }
 function startLobbyWorld(){
   remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); }); remotes.clear();
@@ -2523,24 +2669,58 @@ function startLobbyWorld(){
   const modeSign=lobbyLabel('GAME PADS',0x35d0ba); modeSign.position.set(0,6,30); modeSign.scale.set(5.6,1.05,1); scene.add(modeSign);
   // Low-poly decor makes the hub feel lived-in without adding combat obstacles.
   [-30,-20,20,30].forEach((x,i)=>{ box(2,2.8,2,x,1.4,8,i%2?0x35d0ba:0xff7a2f,{deco:true}); box(2.4,.28,2.4,x,2.95,8,0xffd166,{deco:true}); });
-  const sp=[0,0,10]; G={lobby:true,over:false,paused:false,pos:new THREE.Vector3(sp[0],0,sp[2]),vy:0,onGround:true,mvel:new THREE.Vector3(),t:0,lobbyPresenceAt:0}; yaw=0; pitch=0; faceCenter();
+  const sp=[(Math.random()*2-1)*5, 0, 9+Math.random()*4];   // scatter spawns so players don't stack
+  G={lobby:true,over:false,paused:false,pos:new THREE.Vector3(sp[0],0,sp[2]),vy:0,onGround:true,mvel:new THREE.Vector3(),t:0,lobbyPresenceAt:0}; yaw=0; pitch=0; faceCenter();
   lobbyAvatar=makeRig(0x4fa3d1); lobbyAvatar.position.copy(G.pos); lobbyAvatar.userData.isLocalLobbyAvatar=true;
-  $('hud').style.display='none'; $('lobby').style.display='flex'; $('pause').style.display='none'; document.exitPointerLock&&document.exitPointerLock(); publishLobbyPresence();
+  lobbyAvatar.children.forEach(c=>{ c.raycast=function(){}; });   // never block the aim ray
+  $('plaza-tags').innerHTML=''; ownTag=makeTag($('plaza-tags'),'plaza self'); ownTag.children[1].textContent=save.name;
+  exploring=false; $('plaza-hud').style.display='none';
+  $('hud').style.display='none'; $('lobby').style.display='flex'; $('pause').style.display='none'; document.exitPointerLock&&document.exitPointerLock();
+  hubJoin(); publishLobbyPresence();
 }
 function stepLobby(dt){
+  G.t+=dt;
   const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)), r=new THREE.Vector3(-f.z,0,f.x), move=new THREE.Vector3();
-  if(KEY['KeyW']||KEY['ArrowUp']) move.add(f); if(KEY['KeyS']||KEY['ArrowDown']) move.sub(f); if(KEY['KeyD']||KEY['ArrowRight']) move.add(r); if(KEY['KeyA']||KEY['ArrowLeft']) move.sub(r);
-  if(move.lengthSq()) move.normalize().multiplyScalar(KEY['ShiftLeft']||KEY['ShiftRight']?9:5.5); G.mvel.lerp(move,Math.min(1,dt*16)); const np=G.pos.clone().add(G.mvel.clone().multiplyScalar(dt)); collide(np); G.pos.set(np.x,0,np.z);
-  G.t+=dt; if(lobbyAvatar){ lobbyAvatar.position.copy(G.pos); lobbyAvatar.rotation.y=yaw+Math.PI; }
-  if(G.t-G.lobbyPresenceAt>.2){ G.lobbyPresenceAt=G.t; publishLobbyPresence(); syncLobbyRemotes(); }
-  remotes.forEach(rm=>{ rm.mesh.position.lerp(new THREE.Vector3(rm.tx,rm.ty,rm.tz),Math.min(1,dt*8)); rm.mesh.rotation.y=rm.tyaw+Math.PI; });
-  const orbitBack=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5.5);
-  camera.position.set(G.pos.x+orbitBack.x,G.pos.y+2.8+pitch*1.4,G.pos.z+orbitBack.z);
-  camera.lookAt(G.pos.x,G.pos.y+1.15,G.pos.z);
+  const canMove=exploring && !chatting && !$('weapon-modal').classList.contains('open');
+  if(canMove){
+    if(KEY['KeyW']||KEY['ArrowUp']) move.add(f); if(KEY['KeyS']||KEY['ArrowDown']) move.sub(f); if(KEY['KeyD']||KEY['ArrowRight']) move.add(r); if(KEY['KeyA']||KEY['ArrowLeft']) move.sub(r);
+    if(move.lengthSq()) move.normalize().multiplyScalar(KEY['ShiftLeft']||KEY['ShiftRight']?9:5.5);
+  }
+  G.mvel.lerp(move,Math.min(1,dt*16));
+  const np=G.pos.clone().add(G.mvel.clone().multiplyScalar(dt)); collide(np); G.pos.x=np.x; G.pos.z=np.z;
+  // jump + gravity, same feel as a match
+  const gy=groundAt(G.pos);
+  if(canMove && KEY['Space'] && G.onGround){ G.vy=7.6; G.onGround=false; }
+  G.vy-=22*dt; G.pos.y+=G.vy*dt;
+  if(G.pos.y<=gy){ G.pos.y=gy; G.vy=0; G.onGround=true; } else G.onGround=false;
+  const speed=G.mvel.length();
+  if(lobbyAvatar){
+    lobbyAvatar.position.copy(G.pos); lobbyAvatar.rotation.y=yaw+Math.PI;
+    G.walk=(G.walk||0)+Math.min(speed,9)*dt*2.2; const sw=Math.sin(G.walk)*Math.min(1,speed/3.5)*0.65, c=lobbyAvatar.children;
+    if(c[3]){ c[3].rotation.x=sw; c[4].rotation.x=-sw; c[5].rotation.x=-sw*0.7; c[6].rotation.x=sw*0.7; }
+  }
+  if(G.t-G.lobbyPresenceAt>.1){ G.lobbyPresenceAt=G.t; publishLobbyPresence(); }
+  if(hubDirty || G.t-(G.syncAt||0)>0.5){ hubDirty=false; G.syncAt=G.t; syncLobbyRemotes(); }
+  remotes.forEach(rm=>stepRemote(rm,dt));
+  // third-person camera behind the avatar; pitch tilts it up and down
+  const pc=Math.max(-0.5,Math.min(1.1,pitch));
+  const back=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5.2*Math.cos(pc));
+  camera.position.set(G.pos.x+back.x, G.pos.y+2.4+Math.sin(pc)*5.2, G.pos.z+back.z);
+  camera.lookAt(G.pos.x, G.pos.y+1.3, G.pos.z);
+  if(exploring){
+    const o=lobbyAim(), pr=$('plaza-prompt');
+    if(o && o.userData.lobbyWeapon){ const w=WEAPONS.find(x=>x.id===o.userData.lobbyWeapon); const owned=save.owned.includes(w.id);
+      pr.innerHTML=`<b>Click</b> · ${esc(w.name)} · ${save.equipped===w.id?'equipped':owned?'owned — equip':(w.price?`💣 ${fmt(w.price)}`:'free')}`; pr.hidden=false; }
+    else if(o && o.userData.lobbyFormat){ pr.innerHTML=`<b>Click</b> · play ${esc(o.userData.lobbyFormat)}${o.userData.lobbyFormat==='1v1'?' vs bots':' online'}`; pr.hidden=false; }
+    else pr.hidden=true;
+    updateTags(); updateBubbles();
+    if(G.t-(G.countAt||0)>1){ G.countAt=G.t; renderPlazaCount(); }
+  }
 }
 
 function startGame(testId=null,practice=false){
   preview=null; $('gamelobby').style.display='none'; $('countdown').style.display='none';
+  if(G && G.lobby) exitExplore(); hubLeave(); $('plaza-tags').innerHTML=''; ownTag=null; $('plaza-hud').style.display='none';
   // teardown
   remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); if(r.tag) r.tag.remove(); }); remotes.clear();
   $('tags').innerHTML=''; closeChat();
@@ -2585,6 +2765,7 @@ function startGame(testId=null,practice=false){
   if(save.map==='splash' && !practice) feed('🏄 Climb a tower ladder (or hit a teal jump pad), then walk into the glowing ring to ride the slide');
   renderWallet(); renderSlots(); updateHUD(); renderBoard();
   $('chat-hint').hidden=!(mode==='mp' && room && room.kind==='rtdb');
+  $('plaza-prompt').hidden=true;
   lockPointer();
 }
 function currentWeaponIdMag(id){ return WEAPONS.find(w=>w.id===id).mag; }
@@ -3058,7 +3239,7 @@ function backToLobby(){
     if(room && room.kind==='rtdb' && net.code) showGameLobby(); else $('lobby').style.display='flex';
 }
 // re-lock when clicking the canvas mid-round after focus loss
-document.addEventListener('click',e=>{ if(G && !G.lobby && !G.over && !G.paused && !chatting && document.pointerLockElement!==canvas && !(e.target&&e.target.closest('button,input,select,a'))) lockPointer(); });
+document.addEventListener('click',e=>{ if(G && (!G.lobby || exploring) && !G.over && !G.paused && !chatting && document.pointerLockElement!==canvas && !(e.target&&e.target.closest('button,input,select,a'))) lockPointer(); });
 
 /* ================= ROOM (multiplayer) INIT ================= */
 (async()=>{
@@ -3132,5 +3313,5 @@ document.addEventListener('click',e=>{ if(G && !G.lobby && !G.over && !G.paused 
   });
 })();
 startLobbyWorld();
-$('explore-lobby').onclick=()=>{ $('explore-lobby').blur(); };
+$('explore-lobby').onclick=()=>{ $('explore-lobby').blur(); enterExplore(); };
 </script>
