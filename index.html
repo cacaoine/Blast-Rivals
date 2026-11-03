@@ -1697,8 +1697,8 @@ function glowBox(w,h,d,x,y,z,color){
 }
 /* interactables: jump pads fling you up, slide gates carry you down, ice zones skid */
 const mapPads=[], mapSlides=[], iceZones=[], ladders=[];
-function jumpPad(x,z,vy,pushTo){
-  const ring=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,0.24,20), new THREE.MeshBasicMaterial({color:0x35d0ba}));
+function jumpPad(x,z,vy,pushTo,color=0x35d0ba){
+  const ring=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,0.24,20), new THREE.MeshBasicMaterial({color}));
   ring.position.set(x,0.12,z); scene.add(ring);
   const core=new THREE.Mesh(new THREE.CylinderGeometry(0.95,0.95,0.2,20), new THREE.MeshBasicMaterial({color:0xbafff2}));
   core.position.set(x,0.2,z); scene.add(core);
@@ -1759,6 +1759,38 @@ function tree(x,z,trunkH,trunkC,crownC,crownShape){
       cap.position.set(x,trunkH+i*1.5+1.2,z); scene.add(cap);
     }
   }
+}
+/* Shared gameplay dressing: every map gets the same readable movement language —
+   trampolines, jumpable props, and solid cover that blocks line of sight. */
+function addSharedMapFeatures(mapId){
+  const colors=[0x35d0ba,0x4fa3d1,0xffd166,0xff8fb2];
+  const pads=mapId==='splash'
+    ? [[-18,-10,20,[0,-2]],[18,10,20,[0,2]]]
+    : [[-30,-12,21,[-8,0]],[30,12,21,[8,0]],[-16,30,20,[0,-10]],[16,-30,20,[0,10]]];
+  pads.forEach((p,i)=>{
+    jumpPad(p[0],p[1],p[2],p[3],colors[i%colors.length]);
+    // A raised landing platform makes each trampoline useful and jumpable.
+    box(5.5,.55,5.5,p[3][0],4.3,p[3][1],colors[i%colors.length]);
+    box(5.9,.22,5.9,p[3][0],4.7,p[3][1],colors[i%colors.length],{deco:true});
+  });
+  // Chest-high cover and stacked props create ambush lanes and hiding spots.
+  [[-24,-4,5,2.2,0x46566d],[24,4,5,2.2,0x46566d],[-8,-26,4,2.6,0x6b4f30],[8,26,4,2.6,0x6b4f30],
+   [-30,22,3,1.8,0x596b7d],[30,-22,3,1.8,0x596b7d]].forEach((p,i)=>{
+    box(p[2],p[3],1.4,p[0],p[3]/2,p[1],p[4]);
+    box(p[2]*.82,p[3]*.55,1.65,p[0]+(i%2?.35:-.35),p[3]+.25,p[1]+(i%2?.3:-.3),p[4]);
+  });
+  // Small climbable item piles: crates, barrels, and a few tall sightline blockers.
+  [[-14,4],[14,-4],[-34,-8],[34,8],[0,-32],[0,32]].forEach((p,i)=>{
+    const w=i%2?2.4:2.8, h=i%3===0?2.2:1.5;
+    box(w,h,w,p[0],h/2,p[1],i%2?0x8a6a42:0x6f7f91);
+    if(i%2===0) cyl(.65,1.2,p[0]+w*.7,.6,p[1]+.4,0x8d5b38);
+  });
+  // Low shelters leave a visible gap for peek-and-hide play.
+  [[-34,26],[34,-26]].forEach((p,i)=>{
+    box(6,2.6,.35,p[0],1.3,p[1],0x33415f);
+    box(.35,2.6,5,p[0]+(i?2.8:-2.8),1.3,p[1],0x33415f);
+    box(6.4,.25,5.4,p[0],2.75,p[1],0x4f638c,{deco:true});
+  });
 }
 
 /* ================= MAPS ================= */
@@ -2225,7 +2257,9 @@ function startPreview(mapId){
   scene=new THREE.Scene(); colliders=[]; solidMeshes=[]; tracers.length=0; particles.length=0;
   mapAnims.length=0; mapPads.length=0; mapSlides.length=0; iceZones.length=0; ladders.length=0;
   scene.add(camera);
-  BUILDERS[MAP_LIST.some(m=>m.id===mapId)?mapId:'arena']();
+  const previewMap=MAP_LIST.some(m=>m.id===mapId)?mapId:'arena';
+  BUILDERS[previewMap]();
+  addSharedMapFeatures(previewMap);
   preview={t:0};
 }
 function stopPreview(){ preview=null; if(!G) scene=null; }
@@ -3033,6 +3067,7 @@ function startGame(testId=null,practice=false){
   const mode=(save.mode==='mp' && room && !practice)?'mp':'solo';
   mapAnims.length=0; mapPads.length=0; mapSlides.length=0; iceZones.length=0; ladders.length=0;
   const def=BUILDERS[save.map]();
+  addSharedMapFeatures(save.map);
   const mapName=MAP_LIST.find(m=>m.id===save.map).name;
   const roundsWon=save.roundsWon||0, level=Math.max(1,save.level||1), botLevel=Math.max(level,Math.floor(save.botLevel||level));
   practiceWeapon=practice?testId:null;
@@ -3066,7 +3101,9 @@ function startGame(testId=null,practice=false){
   if(practice) feed(`Practice range: <b>${esc(currentWeapon().name)}</b> — no rewards or purchases required`);
   else if(mode==='mp') feed(`Playing as <b>${esc(save.name)}</b> — rivals on ${mapName} can see you`);
   else feed(`Bot level <b>${botLevel}</b> · ${G.bots.length} rival${G.bots.length===1?'':'s'} on ${mapName}. They move, jump and reload like players.`);
-  if(save.map==='splash' && !practice) feed('🏄 Climb a tower ladder (or hit a teal jump pad), then walk into the glowing ring to ride the slide');
+  if(!practice) feed(save.map==='splash'
+    ? '🏄 Climb a tower ladder (or hit a teal jump pad), then walk into the glowing ring to ride the slide'
+    : '🟢 Every map has glowing trampolines, jumpable props, and solid cover for hiding.');
   renderWallet(); renderSlots(); updateHUD(); renderBoard();
   $('chat-hint').hidden=!(mode==='mp' && room && room.kind==='rtdb');
   $('plaza-prompt').hidden=true;
