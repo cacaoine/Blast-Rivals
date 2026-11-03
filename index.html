@@ -849,13 +849,13 @@ const WEAPON_CATS=['Sidearm','SMG','Rifle','Shotgun','Sniper','Heavy','Energy'];
 function wcat(id){ return WEAPON_CAT[id]||'Rifle'; }
 const shopUI={q:'', view:'all', cat:'all', sort:'price'};
 const MAP_LIST = [
-  {id:'arena',        name:'Arena',        desc:'Golden-hour colosseum. Torch-lit columns, banners and a tiered core.'},
-  {id:'docks',        name:'Docks',        desc:'Moonlit harbor. Rolling water, lamp-lit piers and container lanes.'},
-  {id:'splash',       name:'Splash',       desc:'Sun-bleached water park. Shimmering pool, palms and slide towers.'},
-  {id:'construction', name:'Construction', desc:'Half-built high-rise. Swinging crane, hazard stripes, cement dust.'},
-  {id:'neon',         name:'Neon District',desc:'Rain-slick cyberpunk block. Lit towers, holograms and glow signs.'},
-  {id:'glacier',      name:'Glacier',      desc:'Aurora icefield. Frozen lake, ice monoliths and falling snow.'},
-  {id:'temple',       name:'Temple',       desc:'Overgrown jungle ruin. Step pyramid, torches and a golden idol.'},
+  {id:'arena',        name:'Arena',        desc:'Golden-hour colosseum. Torch-lit columns, banners and a tiered core.',hide:'Look behind the corner ruins and low stone cover.'},
+  {id:'docks',        name:'Docks',        desc:'Moonlit harbor. Rolling water, lamp-lit piers and container lanes.',hide:'Check the crate lanes and the shadowed dock shelters.'},
+  {id:'splash',       name:'Splash',       desc:'Sun-bleached water park. Shimmering pool, palms and slide towers.',hide:'Use the tower bases, pool-side cover, and slide-side gaps.'},
+  {id:'construction', name:'Construction', desc:'Half-built high-rise. Swinging crane, hazard stripes, cement dust.',hide:'Search behind cement stacks and under unfinished platforms.'},
+  {id:'neon',         name:'Neon District',desc:'Rain-slick cyberpunk block. Lit towers, holograms and glow signs.',hide:'Duck behind sign crates and dark tower-side cover.'},
+  {id:'glacier',      name:'Glacier',      desc:'Aurora icefield. Frozen lake, ice monoliths and falling snow.',hide:'Try the igloo, ice blocks, and snowbank shelters.'},
+  {id:'temple',       name:'Temple',       desc:'Overgrown jungle ruin. Step pyramid, torches and a golden idol.',hide:'Look around the ruins, vines, and broken stone cover.'},
 ];
 /* Gun skins — per-weapon recolors, priced by weapon tier */
 const SKINS=[
@@ -1498,7 +1498,7 @@ function renderMaps(){
   MAP_LIST.forEach(m=>{
     const d=document.createElement('button');
     d.className='mapcard'+(save.map===m.id?' sel':'');
-    d.innerHTML=`<div class="mapthumb ${m.id}"><img class="map-art" src="images/arenas/${m.id}.svg" alt="${m.name} arena artwork"></div><div class="mapname">${m.name}</div><div class="mapdesc">${m.desc}</div>`;
+    d.innerHTML=`<div class="mapthumb ${m.id}"><img class="map-art" src="images/arenas/${m.id}.svg" alt="${m.name} arena artwork"></div><div class="mapname">${m.name}</div><div class="mapdesc">${m.desc}<br><b>🕵 Secret hiding spots:</b> ${m.hide}</div>`;
     d.onclick=()=>{ if(typeof net!=='undefined' && net.code && m.id!==net.map){ leaveRoom(); mpMsg='Left the room — rooms are tied to one map.'; }
       save.map=m.id; persist(); renderMaps(); if(typeof renderMpCard==='function') renderMpCard(); };
     $('maps').appendChild(d);
@@ -3319,6 +3319,7 @@ function startGame(testId=null,practice=false){
   if(!practice) feed(save.map==='splash'
     ? '🏄 Climb a tower ladder (or hit a teal jump pad), then walk into the glowing ring to ride the slide'
     : '🟢 Every map has glowing trampolines, jumpable props, and solid cover for hiding.');
+  if(!practice) feed(`🕵 <b>Secret hiding spots:</b> ${esc((MAP_LIST.find(m=>m.id===save.map)||{}).hide||'Use the cover and shelters around the map.')}`);
   renderWallet(); renderSlots(); updateHUD(); renderBoard();
   $('chat-hint').hidden=!(mode==='mp' && room && room.kind==='rtdb');
   $('plaza-prompt').hidden=true;
