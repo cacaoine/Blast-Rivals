@@ -464,6 +464,18 @@
   .settings-fields label{display:grid; gap:5px; color:var(--dim); font-size:11px; text-align:left;}
   .settings-fields input[type=text],.settings-fields input[type=password]{background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:10px; font:inherit;}
   .settings-fields input[type=color]{width:58px; height:36px; padding:2px; background:var(--bg); border:1px solid var(--line); border-radius:7px; cursor:pointer;}
+  .avatar-studio{display:grid; grid-template-columns:minmax(210px,1fr) minmax(170px,.85fr); gap:14px; margin-top:14px; align-items:stretch;}
+  .avatar-preview-shell{position:relative; min-height:250px; overflow:hidden; border:1px solid rgba(53,208,186,.45); border-radius:14px; background:radial-gradient(circle at 50% 30%,#34466d,#111827 72%);}
+  #avatar-preview-canvas{display:block; width:100%; height:250px; cursor:grab;}
+  #avatar-preview-canvas:active{cursor:grabbing;}
+  .avatar-view-label{position:absolute; left:10px; bottom:9px; color:var(--own); font-size:12px; letter-spacing:1px; pointer-events:none;}
+  .avatar-studio-controls{display:flex; flex-direction:column; gap:8px; justify-content:center;}
+  .avatar-studio-controls label{display:grid; gap:5px; color:var(--dim); font-size:12px;}
+  .avatar-studio-controls select{background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--text); padding:9px; font:inherit;}
+  .avatar-views{display:grid; grid-template-columns:repeat(4,1fr); gap:4px;}
+  .avatar-views button{border:1px solid var(--line); background:var(--panel2); color:var(--dim); border-radius:7px; padding:7px 3px; cursor:pointer; font:inherit; font-size:11px;}
+  .avatar-views button.sel{border-color:var(--own); color:var(--own); background:rgba(53,208,186,.1);}
+  @media (max-width:560px){.avatar-studio{grid-template-columns:1fr;}.avatar-preview-shell{min-height:220px;}#avatar-preview-canvas{height:220px;}}
   .settings-note{color:var(--dim); font-size:11px; line-height:1.45; margin-top:10px;}
   .settings-error{color:var(--bad); min-height:16px; font-size:11px; margin-top:8px;}
   @media (max-width:560px){ .modal-hero{grid-template-columns:1fr;} .modal-hero img{height:76px;} }
@@ -559,6 +571,14 @@
 <div class="settings-modal" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
   <div class="settings-card">
     <div class="weapon-modal-head"><div><h2 id="settings-title">Player settings</h2><div class="weapon-modal-sub">Update how other rivals identify you in the lobby and matches.</div></div><button class="modal-close" id="settings-close" type="button" aria-label="Close settings">✕</button></div>
+    <div class="avatar-studio">
+      <div class="avatar-preview-shell"><canvas id="avatar-preview-canvas"></canvas><div class="avatar-view-label" id="avatar-view-label">FRONT VIEW · DRAG TO ROTATE</div></div>
+      <div class="avatar-studio-controls">
+        <label>Avatar item<select id="settings-avatar-item"></select></label>
+        <div class="avatar-views"><button type="button" data-avatar-view="front" class="sel">Front</button><button type="button" data-avatar-view="left">Left</button><button type="button" data-avatar-view="back">Back</button><button type="button" data-avatar-view="right">Right</button></div>
+        <div class="settings-note">Drag the preview or choose a view to inspect your 3D avatar.</div>
+      </div>
+    </div>
     <div class="settings-fields">
       <label>Username<input id="settings-username" type="text" maxlength="16" autocomplete="username" spellcheck="false"></label>
       <label>New password<input id="settings-password" type="password" maxlength="64" autocomplete="new-password" placeholder="Leave blank to keep it"></label>
@@ -933,10 +953,17 @@ function botColor(name){
   let hash=0; for(const ch of String(name)) hash=(hash*31+ch.charCodeAt(0))>>>0;
   return BOT_COLORS[hash%BOT_COLORS.length];
 }
+const AVATAR_ITEMS=[
+  {id:'none',name:'Default gear'},
+  {id:'crown',name:'Neon crown'},
+  {id:'halo',name:'Holo halo'},
+  {id:'antenna',name:'Signal antenna'},
+  {id:'backpack',name:'Rival pack'}
+];
 
 /* ================= SAVE ================= */
 function defaults(){
-  return {bombs:150, owned:['blaster'], equipped:'blaster', map:'arena', mode:'solo', matchFormat:'1v1', botLevel:1, winStreak:0, bestWinStreak:0, avatarColor:'#4fa3d1',
+  return {bombs:150, owned:['blaster'], equipped:'blaster', map:'arena', mode:'solo', matchFormat:'1v1', botLevel:1, winStreak:0, bestWinStreak:0, avatarColor:'#4fa3d1', avatarItem:'none',
           name:'RIVAL-'+Math.floor(1000+Math.random()*9000),
           ownedSkins:[], skins:{}, ownedWraps:[], wrap:{}, roundsWon:0, level:1, xp:0, totalKills:0, headshots:0,
           eventKey:'', eventCasesEarned:0, eventCasesOpened:0, eventTasks:[], eventStats:{kills:0,headshots:0,wins:0,bombs:0,damage:0}, updatedAt:0};
@@ -1079,7 +1106,7 @@ function genCode(){
 function profileBody(){
   return {bombs:save.bombs, owned:save.owned, equipped:save.equipped, ownedSkins:save.ownedSkins,
     skins:save.skins, ownedWraps:save.ownedWraps, wrap:save.wrap, name:save.name,
-    roundsWon:save.roundsWon||0, level:save.level||1, xp:save.xp||0, totalKills:save.totalKills||0, headshots:save.headshots||0, matchFormat:save.matchFormat||'1v1', botLevel:save.botLevel||save.level||1, winStreak:save.winStreak||0, bestWinStreak:save.bestWinStreak||0, avatarColor:save.avatarColor||'#4fa3d1',
+    roundsWon:save.roundsWon||0, level:save.level||1, xp:save.xp||0, totalKills:save.totalKills||0, headshots:save.headshots||0, matchFormat:save.matchFormat||'1v1', botLevel:save.botLevel||save.level||1, winStreak:save.winStreak||0, bestWinStreak:save.bestWinStreak||0, avatarColor:save.avatarColor||'#4fa3d1', avatarItem:save.avatarItem||'none',
     eventKey:save.eventKey, eventCasesEarned:save.eventCasesEarned||0, eventCasesOpened:save.eventCasesOpened||0, eventTasks:save.eventTasks||[], eventStats:save.eventStats||{}, map:save.map, mode:save.mode, updatedAt:Date.now()};
 }
 function mergeProfile(d){
@@ -1097,6 +1124,7 @@ function mergeProfile(d){
   if(typeof d.winStreak==='number') save.winStreak=Math.max(save.winStreak||0, Math.floor(d.winStreak));
   if(typeof d.bestWinStreak==='number') save.bestWinStreak=Math.max(save.bestWinStreak||0, Math.floor(d.bestWinStreak));
   if(typeof d.avatarColor==='string' && /^#[0-9a-f]{6}$/i.test(d.avatarColor)) save.avatarColor=d.avatarColor;
+  if(typeof d.avatarItem==='string' && AVATAR_ITEMS.some(x=>x.id===d.avatarItem)) save.avatarItem=d.avatarItem;
   if(d.eventKey===save.eventKey){
     if(Array.isArray(d.eventTasks)) d.eventTasks.forEach((v,i)=>{ if(v) save.eventTasks[i]=true; });
     if(typeof d.eventCasesEarned==='number') save.eventCasesEarned=Math.max(save.eventCasesEarned||0,Math.min(5,Math.floor(d.eventCasesEarned)));
@@ -1226,13 +1254,58 @@ async function fbOnUser(user){
 let guest=false, authMode='login';
 function authForm(){ return {u:($('auth-user').value||'').trim().toLowerCase(), p:$('auth-pass').value||''}; }
 function avatarColor(value=save.avatarColor){ return /^#[0-9a-f]{6}$/i.test(String(value||''))?String(value):'#4fa3d1'; }
+function avatarItem(value=save.avatarItem){ return AVATAR_ITEMS.some(x=>x.id===value)?value:'none'; }
 function currentUsername(){
   return acctState==='fb-in'?fbUsername:(acctState==='nodb'&&localUser)?localUser:save.name;
 }
+const avatarPreview={renderer:null,scene:null,camera:null,rig:null,view:'front',drag:false,lastX:0,angle:0};
+function initAvatarPreview(){
+  if(avatarPreview.renderer) return;
+  const canvas=$('avatar-preview-canvas');
+  avatarPreview.renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  avatarPreview.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  avatarPreview.scene=new THREE.Scene(); avatarPreview.scene.background=new THREE.Color(0x1a2940);
+  avatarPreview.camera=new THREE.PerspectiveCamera(35,1,.1,50); avatarPreview.camera.position.set(0,1.45,5.3); avatarPreview.camera.lookAt(0,1.2,0);
+  avatarPreview.scene.add(new THREE.HemisphereLight(0xb8d6ff,0x202b42,1.65));
+  const key=new THREE.DirectionalLight(0xffd6a0,1.6); key.position.set(3,6,4); avatarPreview.scene.add(key);
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(2.2,32),new THREE.MeshLambertMaterial({color:0x34466d})); floor.rotation.x=-Math.PI/2; floor.position.y=.01; avatarPreview.scene.add(floor);
+  canvas.addEventListener('pointerdown',e=>{ avatarPreview.drag=true; avatarPreview.lastX=e.clientX; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove',e=>{ if(!avatarPreview.drag) return; avatarPreview.angle+=(e.clientX-avatarPreview.lastX)*.012; avatarPreview.lastX=e.clientX; if(avatarPreview.rig) avatarPreview.rig.rotation.y=avatarPreview.angle; });
+  canvas.addEventListener('pointerup',()=>{ avatarPreview.drag=false; });
+  requestAnimationFrame(renderAvatarPreview);
+}
+function resizeAvatarPreview(){
+  if(!avatarPreview.renderer) return;
+  const canvas=$('avatar-preview-canvas'), w=Math.max(1,canvas.clientWidth), h=Math.max(1,canvas.clientHeight);
+  avatarPreview.renderer.setSize(w,h,false); avatarPreview.camera.aspect=w/h; avatarPreview.camera.updateProjectionMatrix();
+}
+function updateAvatarPreview(){
+  if(!avatarPreview.renderer) return;
+  const canvas=$('avatar-preview-canvas'); resizeAvatarPreview();
+  if(avatarPreview.rig) avatarPreview.scene.remove(avatarPreview.rig);
+  avatarPreview.rig=makeRig(avatarColor($('settings-avatar-color').value),avatarItem($('settings-avatar-item').value),avatarPreview.scene);
+  avatarPreview.rig.position.y=0; avatarPreview.rig.rotation.y=avatarPreview.angle;
+  canvas.closest('.avatar-preview-shell').style.setProperty('--avatar-color',avatarColor($('settings-avatar-color').value));
+}
+function setAvatarPreviewView(view){
+  avatarPreview.view=view; avatarPreview.angle={front:0,left:-Math.PI/2,back:Math.PI,right:Math.PI/2}[view]||0;
+  if(avatarPreview.rig) avatarPreview.rig.rotation.y=avatarPreview.angle;
+  document.querySelectorAll('[data-avatar-view]').forEach(b=>b.classList.toggle('sel',b.dataset.avatarView===view));
+  $('avatar-view-label').textContent=view.toUpperCase()+' VIEW · DRAG TO ROTATE';
+}
+function renderAvatarPreview(){
+  requestAnimationFrame(renderAvatarPreview);
+  if(!avatarPreview.renderer || !$('settings-modal').classList.contains('open')) return;
+  avatarPreview.renderer.render(avatarPreview.scene,avatarPreview.camera);
+}
 function openSettings(){
+  initAvatarPreview();
+  const itemSelect=$('settings-avatar-item');
+  if(!itemSelect.options.length) itemSelect.innerHTML=AVATAR_ITEMS.map(x=>`<option value="${x.id}">${x.name}</option>`).join('');
   $('settings-username').value=currentUsername();
   $('settings-password').value='';
   $('settings-avatar-color').value=avatarColor();
+  itemSelect.value=avatarItem(); updateAvatarPreview(); setAvatarPreviewView('front');
   $('settings-error').textContent='';
   $('settings-note').textContent=acctState==='fb-in'?'Firebase keeps usernames unique. A password change may ask you to sign in again.':acctState==='nodb'&&localUser?'Usernames are unique on this device.':'Guest settings change your local call sign; create an account to reserve a unique username.';
   $('settings-modal').classList.add('open');
@@ -1241,7 +1314,7 @@ function closeSettings(){ $('settings-modal').classList.remove('open'); }
 async function saveSettings(){
   const username=($('settings-username').value||'').trim().toLowerCase();
   const password=$('settings-password').value||'';
-  const color=avatarColor($('settings-avatar-color').value);
+  const color=avatarColor($('settings-avatar-color').value), item=avatarItem($('settings-avatar-item').value);
   if(!/^[a-z0-9_-]{3,16}$/.test(username)){ $('settings-error').textContent='Username must be 3–16 letters, numbers, underscores, or hyphens.'; return; }
   if(password && password.length<6){ $('settings-error').textContent='New password must be at least 6 characters.'; return; }
   const old=currentUsername().toLowerCase();
@@ -1264,13 +1337,17 @@ async function saveSettings(){
       save.name=username.toUpperCase().slice(0,14);
       if(password) $('settings-note').textContent='Password changes require a local or Firebase account.';
     }
-    save.avatarColor=color; persist(); refreshLobbyFromSave(); renderAcct(); refreshLobbyAvatar(); publishLobbyPresence(); closeSettings(); sfx('buy');
+    save.avatarColor=color; save.avatarItem=item; persist(); refreshLobbyFromSave(); renderAcct(); refreshLobbyAvatar(); publishLobbyPresence(); closeSettings(); sfx('buy');
   }catch(e){
     $('settings-error').textContent=fbFriendly(e);
   }
 }
 $('settings-close').onclick=closeSettings; $('settings-cancel').onclick=closeSettings; $('settings-save').onclick=saveSettings;
 $('settings-modal').addEventListener('click',e=>{ if(e.target.id==='settings-modal') closeSettings(); });
+$('settings-avatar-color').addEventListener('input',updateAvatarPreview);
+$('settings-avatar-item').addEventListener('change',updateAvatarPreview);
+document.querySelectorAll('[data-avatar-view]').forEach(b=>b.onclick=()=>setAvatarPreviewView(b.dataset.avatarView));
+addEventListener('resize',resizeAvatarPreview);
 function setAuthMode(m){
   authMode=m;
   $('tab-login').classList.toggle('sel',m==='login'); $('tab-signup').classList.toggle('sel',m==='signup');
@@ -2205,7 +2282,7 @@ const BUILDERS={
 };
 
 /* ================= CHARACTER RIG (bots + remote players) ================= */
-function makeRig(color){
+function makeRig(color,item='none',targetScene=scene){
   const g=new THREE.Group();
   const darker=new THREE.Color(color).multiplyScalar(0.72).getHex();
   const body=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.15,0.55), new THREE.MeshLambertMaterial({color})); body.position.y=1.05; body.name='body';
@@ -2219,8 +2296,22 @@ function makeRig(color){
   const flash=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.34,0.34), new THREE.MeshBasicMaterial({color:0xff4757}));
   flash.position.set(0.58,1.3,1.0); flash.visible=false; flash.raycast=function(){};
   g.add(body,head,visor,legL,legR,armL,armR,gun,flash);
+  if(item==='crown'){
+    const crown=new THREE.Mesh(new THREE.ConeGeometry(.42,.42,5),new THREE.MeshLambertMaterial({color:0xffd166,emissive:0x7a4f00,emissiveIntensity:.25}));
+    crown.position.set(0,2.48,0); g.add(crown);
+  } else if(item==='halo'){
+    const halo=new THREE.Mesh(new THREE.TorusGeometry(.46,.07,8,24),new THREE.MeshBasicMaterial({color:0x35d0ba}));
+    halo.rotation.x=Math.PI/2; halo.position.set(0,2.42,0); g.add(halo);
+  } else if(item==='antenna'){
+    const stem=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.5,8),new THREE.MeshLambertMaterial({color:0x9aa8bd}));
+    stem.position.set(0,2.5,0); const tip=new THREE.Mesh(new THREE.SphereGeometry(.11,8,6),new THREE.MeshBasicMaterial({color:0xff4757}));
+    tip.position.set(0,2.78,0); g.add(stem,tip);
+  } else if(item==='backpack'){
+    const pack=new THREE.Mesh(new THREE.BoxGeometry(.58,.7,.22),new THREE.MeshLambertMaterial({color:0x8e6cc0}));
+    pack.position.set(0,1.18,-.36); g.add(pack);
+  }
   g.userData.flash=flash;
-  scene.add(g);
+  targetScene.add(g);
   return g;
 }
 function makeBot(name,pos){
@@ -2532,7 +2623,7 @@ function syncRemotes(){
     let r=remotes.get(p.peer);
     const pr=p.presence;
     if(!r){
-      r={mesh:makeRig((p.presence&&p.presence.avatarColor)||peerColor(p.peer)), tx:0,ty:0,tz:0,tyaw:0, name:peerName(p.peer), snaps:[], phase:0, wep:null, hp:100, tag:null};
+      r={mesh:makeRig((p.presence&&p.presence.avatarColor)||peerColor(p.peer),p.presence&&p.presence.avatarItem), tx:0,ty:0,tz:0,tyaw:0, name:peerName(p.peer), snaps:[], phase:0, wep:null, hp:100, tag:null};
       if(typeof pr.x==='number'){ r.mesh.position.set(+pr.x||0,Math.max(0,+pr.y||0),+pr.z||0); }
       r.tag=makeTag($('tags'),'');
       remotes.set(p.peer,r);
@@ -2950,7 +3041,7 @@ let exploring=false, hubSid=null, hubPlayers={}, hubUnsub=null, hubLastSent='', 
 function refreshLobbyAvatar(){
   if(!lobbyAvatar || !scene || !G || !G.lobby) return;
   const pos=lobbyAvatar.position.clone(), rot=lobbyAvatar.rotation.y;
-  scene.remove(lobbyAvatar); lobbyAvatar=makeRig(avatarColor()); lobbyAvatar.position.copy(pos); lobbyAvatar.rotation.y=rot; lobbyAvatar.userData.isLocalLobbyAvatar=true;
+  scene.remove(lobbyAvatar); lobbyAvatar=makeRig(avatarColor(),avatarItem()); lobbyAvatar.position.copy(pos); lobbyAvatar.rotation.y=rot; lobbyAvatar.userData.isLocalLobbyAvatar=true;
   lobbyAvatar.traverse(c=>{ c.raycast=function(){}; });
 }
 function hubReady(){ return !!(rtdb && fbUser); }
@@ -2958,7 +3049,7 @@ function hubJoin(){
   if(!hubReady() || hubSid || !G || !G.lobby) return;
   const sid=fbUser.uid.slice(0,6)+'-'+Math.random().toString(36).slice(2,7), me=rtdb.ref('hub/players/'+sid);
   hubSid=sid;
-  me.set({uid:fbUser.uid, name:save.name, avatarColor:avatarColor(), x:+G.pos.x.toFixed(2), y:0, z:+G.pos.z.toFixed(2), yaw:+yaw.toFixed(3), t:Date.now()}).catch(()=>{ if(hubSid===sid) hubSid=null; });
+  me.set({uid:fbUser.uid, name:save.name, avatarColor:avatarColor(), avatarItem:avatarItem(), x:+G.pos.x.toFixed(2), y:0, z:+G.pos.z.toFixed(2), yaw:+yaw.toFixed(3), t:Date.now()}).catch(()=>{ if(hubSid===sid) hubSid=null; });
   me.onDisconnect().remove();
   const ref=rtdb.ref('hub/players'); const h=sn=>{ hubPlayers=sn.val()||{}; hubDirty=true; renderPlazaCount(); };
   ref.on('value',h); hubUnsub=()=>ref.off('value',h);
@@ -2986,7 +3077,7 @@ function renderPlazaCount(){
 }
 function publishLobbyPresence(){
   if(!G||!G.lobby) return;
-  const p={x:+G.pos.x.toFixed(2), y:+G.pos.y.toFixed(2), z:+G.pos.z.toFixed(2), yaw:+yaw.toFixed(3), avatarColor:avatarColor()};
+  const p={x:+G.pos.x.toFixed(2), y:+G.pos.y.toFixed(2), z:+G.pos.z.toFixed(2), yaw:+yaw.toFixed(3), avatarColor:avatarColor(), avatarItem:avatarItem()};
   if(hubSid){ const key=p.x+','+p.y+','+p.z+','+p.yaw+','+save.name; if(key!==hubLastSent){ hubLastSent=key; hubSend({...p, name:save.name, t:Date.now()}); } return; }
   if(room && room.kind!=='rtdb') room.presence({lobby:true,playing:false,name:save.name,format:save.matchFormat||'1v1',...p}).catch(()=>{});
 }
@@ -2996,7 +3087,7 @@ function syncLobbyRemotes(){
   plazaPeers().forEach(p=>{
     live.add(p.peer); let r=remotes.get(p.peer); const pr=p.presence||{};
     if(!r){
-      r={mesh:makeRig((pr.avatarColor)||peerColor(p.peer)), name:p.name, snaps:[], phase:0, wep:null, hp:100, tag:makeTag($('plaza-tags'),'plaza'), say:null, sayAt:0};
+      r={mesh:makeRig((pr.avatarColor)||peerColor(p.peer),pr.avatarItem), name:p.name, snaps:[], phase:0, wep:null, hp:100, tag:makeTag($('plaza-tags'),'plaza'), say:null, sayAt:0};
       r.mesh.position.set(+pr.x||0, Math.max(0,+pr.y||0), +pr.z||0);
       remotes.set(p.peer,r);
     }
@@ -3126,7 +3217,7 @@ function startLobbyWorld(){
   [-30,-20,20,30].forEach((x,i)=>{ box(2,2.8,2,x,1.4,8,i%2?0x35d0ba:0xff7a2f,{solid:true}); box(2.4,.28,2.4,x,2.95,8,0xffd166,{solid:true}); });
   const sp=[(Math.random()*2-1)*5, 0, 9+Math.random()*4];   // scatter spawns so players don't stack
   G={lobby:true,over:false,paused:false,pos:new THREE.Vector3(sp[0],0,sp[2]),vy:0,onGround:true,mvel:new THREE.Vector3(),t:0,lobbyPresenceAt:0}; yaw=0; pitch=0; faceCenter();
-  lobbyAvatar=makeRig(avatarColor()); lobbyAvatar.position.copy(G.pos); lobbyAvatar.userData.isLocalLobbyAvatar=true;
+  lobbyAvatar=makeRig(avatarColor(),avatarItem()); lobbyAvatar.position.copy(G.pos); lobbyAvatar.userData.isLocalLobbyAvatar=true;
   lobbyAvatar.children.forEach(c=>{ c.raycast=function(){}; });   // never block the aim ray
   $('plaza-tags').innerHTML=''; ownTag=makeTag($('plaza-tags'),'plaza self'); ownTag.children[1].textContent=save.name;
   exploring=false; $('plaza-hud').style.display='none';
@@ -3211,7 +3302,7 @@ function startGame(testId=null,practice=false){
   }
   faceCenter();
   if(mode==='mp')
-    room.presence({lobby:false,playing:true, dead:false, map:save.map, name:save.name, avatarColor:avatarColor(), format:save.matchFormat||'1v1', score:0,
+    room.presence({lobby:false,playing:true, dead:false, map:save.map, name:save.name, avatarColor:avatarColor(), avatarItem:avatarItem(), format:save.matchFormat||'1v1', score:0,
       x:+G.pos.x.toFixed(2), y:0, z:+G.pos.z.toFixed(2), yaw:+yaw.toFixed(3)}).catch(()=>{});
   resetAbilityState(); buildViewModel();
   $('lobby').style.display='none'; $('hud').style.display='block';
@@ -3769,7 +3860,7 @@ $('leave').onclick=()=>{ backToLobby(); };
 $('again').onclick=()=>{ if(room && room.kind==='rtdb' && net.code && G && G.mode==='mp'){ if(isHost()) hostStart(); return; } startGame(); };
 $('tolobby').onclick=()=>{ if(room && room.kind==='rtdb' && net.code && G && G.mode==='mp' && isHost()) net.ref.child('match').set({state:'lobby'}).catch(()=>{}); backToLobby(); };
 function backToLobby(){
-  if(room) room.presence({lobby:true,playing:false,name:save.name,avatarColor:avatarColor(),format:save.matchFormat||'1v1'}).catch(()=>{});
+  if(room) room.presence({lobby:true,playing:false,name:save.name,avatarColor:avatarColor(),avatarItem:avatarItem(),format:save.matchFormat||'1v1'}).catch(()=>{});
   remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); if(r.tag) r.tag.remove(); }); remotes.clear();
   $('tags').innerHTML=''; closeChat();
   G=null; scene=null;
