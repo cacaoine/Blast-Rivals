@@ -1623,7 +1623,7 @@ function box(w,h,d,x,y,z,color,opts={}){
   m.position.set(x,y,z);
   if(opts.rotY) m.rotation.y=opts.rotY;
   scene.add(m);
-  if(!opts.deco && !opts.rotY){
+  if((!opts.deco || opts.solid) && !opts.rotY){
     colliders.push({minX:x-w/2,maxX:x+w/2,minY:y-h/2,maxY:y+h/2,minZ:z-d/2,maxZ:z+d/2,
       jumpable:!!opts.jumpable || (h<=3 && y-h/2<=0.05 && w>=1.4 && d>=1.4)});
     solidMeshes.push(m);
@@ -1743,6 +1743,7 @@ function mapToy(x,z,color,label){
   orb.position.set(x,.72,z); scene.add(orb);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.72,.06,8,20),new THREE.MeshBasicMaterial({color}));
   ring.rotation.x=Math.PI/2; ring.position.set(x,.3,z); scene.add(ring);
+  colliders.push({minX:x-.9,maxX:x+.9,minY:0,maxY:.28,minZ:z-.9,maxZ:z+.9});
   const toy={x,z,label,orb,ring,cd:0,pulse:0}; mapToys.push(toy);
   mapAnims.push((dt,t)=>{
     toy.pulse=Math.max(0,toy.pulse-dt*3);
@@ -2920,6 +2921,7 @@ function lobbyPad(label,x,z,color){
 function lobbyToy(label,x,z,color){
   const base=new THREE.Mesh(new THREE.CylinderGeometry(.9,1.05,.3,12),new THREE.MeshLambertMaterial({color:0x293650}));
   base.position.set(x,.15,z); scene.add(base);
+  colliders.push({minX:x-.95,maxX:x+.95,minY:0,maxY:.3,minZ:z-.95,maxZ:z+.95});
   const toy=new THREE.Mesh(new THREE.OctahedronGeometry(.62,1),new THREE.MeshLambertMaterial({color,emissive:color,emissiveIntensity:.35}));
   toy.position.set(x,1.05,z); scene.add(toy);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.95,.07,8,24),new THREE.MeshBasicMaterial({color}));
@@ -2935,6 +2937,7 @@ function lobbyToy(label,x,z,color){
 function lobbyWeapon(wid,x,z){
   const w=WEAPONS.find(v=>v.id===wid), base=new THREE.Mesh(new THREE.BoxGeometry(1.9,.55,1.9),new THREE.MeshLambertMaterial({color:0x2a3348}));
   base.position.set(x,.28,z); scene.add(base);
+  colliders.push({minX:x-.95,maxX:x+.95,minY:0,maxY:.55,minZ:z-.95,maxZ:z+.95});
   const gun=makeWeaponProp(w,new THREE.MeshLambertMaterial({color:w.color}),new THREE.MeshLambertMaterial({color:0x171b26}),baseWeaponShape(w));
   gun.position.set(x,.82,z); gun.rotation.y=Math.PI/2; gun.scale.setScalar(1.25); scene.add(gun);
   const t=lobbyLabel(w.name,w.color); t.position.set(x,2.35,z); scene.add(t);
@@ -3096,18 +3099,18 @@ function startLobbyWorld(){
   [[0,1,-40,80,2,1],[0,1,40,80,2,1],[-40,1,0,1,2,80],[40,1,0,1,2,80]].forEach(v=>box(v[3],v[4],v[5],v[0],v[1],v[2],0x202b3c));
   scene.add(new THREE.HemisphereLight(0xb8d6ff,0x35234d,1.65)); const key=new THREE.PointLight(0xff9b4d,2.5,65); key.position.set(0,9,0); scene.add(key);
   // Chunky spawn plaza: bright tiles, corner columns, and a central social platform.
-  box(18,.35,13,0,.18,8,0x34466d,{deco:true}); box(12,.42,8,0,.42,8,0x4d5f8d,{deco:true});
-  [[-8,2,2,0xff7a2f],[8,2,2,0x35d0ba],[-8,2,14,0xffb35c],[8,2,14,0x8e6cc0]].forEach(v=>{ box(.8,4,.8,v[0],v[1],v[2],v[3],{deco:true}); glowBox(.95,.18,.95,v[0],4.05,v[2],v[3]); });
+  box(18,.35,13,0,.18,8,0x34466d,{solid:true}); box(12,.42,8,0,.42,8,0x4d5f8d,{solid:true});
+  [[-8,2,2,0xff7a2f],[8,2,2,0x35d0ba],[-8,2,14,0xffb35c],[8,2,14,0x8e6cc0]].forEach(v=>{ box(.8,4,.8,v[0],v[1],v[2],v[3],{solid:true}); glowBox(.95,.18,.95,v[0],4.05,v[2],v[3]); });
   const spawnSign=lobbyLabel('SPAWN PLAZA',0xffd166); spawnSign.position.set(0,4.8,8); spawnSign.scale.set(5.2,.9,1); scene.add(spawnSign);
   // Extra plaza dressing: benches, planters, lamps, crates, and display stands.
   [[-13,1,0xff7a2f],[13,1,0x35d0ba],[-13,15,0xffb35c],[13,15,0x8e6cc0]].forEach(v=>{
-    box(3.8,.35,1.05,v[0],.45,8,0x6d4d38,{deco:true});
-    box(.3,1.1,1.35,v[0]-1.45,.65,8,0x3b465f,{deco:true}); box(.3,1.1,1.35,v[0]+1.45,.65,8,0x3b465f,{deco:true});
-    cyl(.75,.3,v[0],.25,v[1]+7,v[2],true); cyl(.48,1.8,v[0],1.05,v[1]+7,0x3b465f,true);
+    box(3.8,.35,1.05,v[0],.45,8,0x6d4d38,{solid:true});
+    box(.3,1.1,1.35,v[0]-1.45,.65,8,0x3b465f,{solid:true}); box(.3,1.1,1.35,v[0]+1.45,.65,8,0x3b465f,{solid:true});
+    cyl(.75,.3,v[0],.25,v[1]+7,v[2],false); cyl(.48,1.8,v[0],1.05,v[1]+7,0x3b465f,false);
     glowBox(.7,.7,.7,v[0],2.1,v[1]+7,v[2]);
   });
   [[-16,2],[16,2],[-16,14],[16,14]].forEach((p,i)=>{
-    cyl(.82,.35,p[0],.18,p[1],0x43536d,true); cyl(.64,1.1,p[0],.88,p[1],i%2?0x35d0ba:0xff7a2f,true);
+    cyl(.82,.35,p[0],.18,p[1],0x43536d,false); cyl(.64,1.1,p[0],.88,p[1],i%2?0x35d0ba:0xff7a2f,false);
     const plant=new THREE.Mesh(new THREE.ConeGeometry(.75,1.5,7),new THREE.MeshLambertMaterial({color:i%2?0x49a86f:0x6cc08a})); plant.position.set(p[0],1.8,p[1]); scene.add(plant);
   });
   lobbyToy('Color spinner',-6.8,4,0xff7a2f); lobbyToy('Light orb',6.8,4,0x35d0ba);
@@ -3120,7 +3123,7 @@ function startLobbyWorld(){
   const modes=['1v1','2v2','3v3','4v4','5v5','1v1v1','2v2v2']; modes.forEach((m,i)=>lobbyPad(m,-20+(i%5)*10,22+Math.floor(i/5)*8,[0x35d0ba,0x4fa3d1,0xf2c14e,0x8e6cc0,0xff8fb2,0xe07b39,0xb0c34e][i]));
   const modeSign=lobbyLabel('GAME PADS',0x35d0ba); modeSign.position.set(0,6,30); modeSign.scale.set(5.6,1.05,1); scene.add(modeSign);
   // Low-poly decor makes the hub feel lived-in without adding combat obstacles.
-  [-30,-20,20,30].forEach((x,i)=>{ box(2,2.8,2,x,1.4,8,i%2?0x35d0ba:0xff7a2f,{deco:true}); box(2.4,.28,2.4,x,2.95,8,0xffd166,{deco:true}); });
+  [-30,-20,20,30].forEach((x,i)=>{ box(2,2.8,2,x,1.4,8,i%2?0x35d0ba:0xff7a2f,{solid:true}); box(2.4,.28,2.4,x,2.95,8,0xffd166,{solid:true}); });
   const sp=[(Math.random()*2-1)*5, 0, 9+Math.random()*4];   // scatter spawns so players don't stack
   G={lobby:true,over:false,paused:false,pos:new THREE.Vector3(sp[0],0,sp[2]),vy:0,onGround:true,mvel:new THREE.Vector3(),t:0,lobbyPresenceAt:0}; yaw=0; pitch=0; faceCenter();
   lobbyAvatar=makeRig(avatarColor()); lobbyAvatar.position.copy(G.pos); lobbyAvatar.userData.isLocalLobbyAvatar=true;
