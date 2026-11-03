@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <title>Blast Rivals</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cherry+Cream+Soda&family=Caveat:wght@400;500;600;700&display=swap">
 <style>
   :root{
     --bg:#10141c; --panel:#1a2130; --panel2:#222b3d; --line:#2e3950;
@@ -529,6 +529,12 @@
   .obtn.primary{background:var(--accent); color:#1a1006; border:none;}
   .obtn:hover{filter:brightness(1.12);}
   @media (max-width:480px){ .playbtn{width:100%; padding:16px;} }
+  /* Typography: Caveat carries the interface copy; Cherry Cream Soda marks titles. */
+  body, body *{font-family:'Caveat',cursive !important;}
+  h1,h2,h3,h4,h5,h6,[class*="title"],[class*="name"],.header-brand,.mapname,.wep-name,
+  .playbtn,.footer-label,.modename,.gl-code,.mp-code,.primary-btn,.big,#wep-label,#ammo,#score-box{
+    font-family:'Cherry Cream Soda',cursive !important;
+  }
 </style>
 
 <canvas id="c"></canvas>
@@ -2901,7 +2907,7 @@ const lobbyRay=new THREE.Raycaster();
 function lobbyLabel(text,color=0xffb35c){
   const c=document.createElement('canvas'); c.width=512; c.height=96;
   const x=c.getContext('2d'); x.fillStyle='rgba(10,13,19,.82)'; x.fillRect(4,4,504,88); x.strokeStyle='#'+color.toString(16).padStart(6,'0'); x.lineWidth=4; x.strokeRect(4,4,504,88);
-  x.fillStyle='#e8ecf4'; x.font='700 32px Rubik, sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(text,256,50);
+  x.fillStyle='#e8ecf4'; x.font='700 32px "Cherry Cream Soda", cursive'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(text,256,50);
   const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false})); s.scale.set(4.2,.78,1); return s;
 }
 function lobbyPad(label,x,z,color){
