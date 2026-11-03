@@ -1702,7 +1702,7 @@ function box(w,h,d,x,y,z,color,opts={}){
   scene.add(m);
   if((!opts.deco || opts.solid) && !opts.rotY){
     colliders.push({minX:x-w/2,maxX:x+w/2,minY:y-h/2,maxY:y+h/2,minZ:z-d/2,maxZ:z+d/2,
-      jumpable:!!opts.jumpable || (h<=3 && y-h/2<=0.05 && w>=1.4 && d>=1.4)});
+      jumpable:!!opts.jumpable || (h<=3 && w>=1.4 && d>=1.4)});
     solidMeshes.push(m);
   } else if(!opts.deco && opts.rotY){ solidMeshes.push(m); }
   return m;
@@ -1911,7 +1911,7 @@ function addSharedMapFeatures(mapId){
     jumpPad(spot.x,spot.z,p[2],target,colors[i%colors.length]);
     // A raised landing platform makes each trampoline useful and jumpable.
     box(5.5,.55,5.5,target[0],4.3,target[1],colors[i%colors.length],{jumpable:true});
-    box(5.9,.22,5.9,target[0],4.7,target[1],colors[i%colors.length],{deco:true});
+    box(5.9,.22,5.9,target[0],4.7,target[1],colors[i%colors.length],{solid:true});
     // Give every raised platform its own nearby launch point so players can
     // reliably reach it without hunting for a trampoline elsewhere.
     const platformPadX=target[0]+(target[0]>=0?-4.7:4.7);
@@ -2208,12 +2208,16 @@ const BUILDERS={
     const igloo=new THREE.Mesh(new THREE.SphereGeometry(4,14,10,Math.PI/2-0.55,Math.PI*2-1.1,0,Math.PI/2),
       new THREE.MeshLambertMaterial({color:0xf4f8fc}));
     igloo.position.set(-32,0,26); scene.add(igloo);
-    // Open the front of the dome so players can enter the igloo.
+    // Build a clear, physical doorway: solid side/back walls and a lintel
+    // leave only the centered opening visible beneath the arch.
     colliders.push({minX:-36,maxX:-28,minY:0,maxY:3.6,minZ:22,maxZ:23});
-    colliders.push({minX:-36,maxX:-34,minY:0,maxY:3.6,minZ:23,maxZ:30});
-    colliders.push({minX:-30,maxX:-28,minY:0,maxY:3.6,minZ:23,maxZ:30});
+    colliders.push({minX:-36,maxX:-33.25,minY:0,maxY:3.6,minZ:23,maxZ:30});
+    colliders.push({minX:-30.75,maxX:-28,minY:0,maxY:3.6,minZ:23,maxZ:30});
+    colliders.push({minX:-33.25,maxX:-30.75,minY:2.7,maxY:3.6,minZ:28.8,maxZ:30.4});
     const iglooFloor=new THREE.Mesh(new THREE.CylinderGeometry(3.25,3.25,.08,24),new THREE.MeshLambertMaterial({color:0xd8edf5}));
     iglooFloor.position.set(-32,.04,26); scene.add(iglooFloor);
+    const iglooDoor=new THREE.Mesh(new THREE.PlaneGeometry(2.5,2.65),new THREE.MeshLambertMaterial({color:0x172536,side:THREE.DoubleSide}));
+    iglooDoor.position.set(-32,1.35,30.08); scene.add(iglooDoor);
     const iglooArch=new THREE.Mesh(new THREE.TorusGeometry(1.65,.18,8,18,Math.PI),new THREE.MeshLambertMaterial({color:0xd4eaf4}));
     iglooArch.position.set(-32,1.7,30.02); iglooArch.rotation.y=Math.PI/2; scene.add(iglooArch);
     solidMeshes.push(igloo);
