@@ -1767,16 +1767,32 @@ function tree(x,z,trunkH,trunkC,crownC,crownShape){
 }
 /* Shared gameplay dressing: every map gets the same readable movement language —
    trampolines, jumpable props, and solid cover that blocks line of sight. */
+function clearMapGround(x,z,r=2.25){
+  return colliders.every(c=>c.minY>2.5 || x+r<c.minX || x-r>c.maxX || z+r<c.minZ || z-r>c.maxZ);
+}
+function findClearMapPad(x,z,used){
+  const attempts=[[0,0],[6,0],[-6,0],[0,6],[0,-6],[6,6],[-6,6],[6,-6],[-6,-6],[12,0],[-12,0],[0,12],[0,-12]];
+  for(const [dx,dz] of attempts){
+    const px=Math.max(-37,Math.min(37,x+dx)), pz=Math.max(-37,Math.min(37,z+dz));
+    if(clearMapGround(px,pz,2.25) && used.every(q=>(q.x-px)**2+(q.z-pz)**2>36)) return {x:px,z:pz};
+  }
+  for(let px=-34;px<=34;px+=4) for(let pz=-34;pz<=34;pz+=4)
+    if(clearMapGround(px,pz,2.25) && used.every(q=>(q.x-px)**2+(q.z-pz)**2>36)) return {x:px,z:pz};
+  return {x,z};
+}
 function addSharedMapFeatures(mapId){
   const colors=[0x35d0ba,0x4fa3d1,0xffd166,0xff8fb2];
   const pads=mapId==='splash'
     ? [[-18,-10,20,[0,-2]],[18,10,20,[0,2]]]
     : [[-30,-12,21,[-8,0]],[30,12,21,[8,0]],[-16,30,20,[0,-10]],[16,-30,20,[0,10]]];
+  const usedPads=[];
   pads.forEach((p,i)=>{
-    jumpPad(p[0],p[1],p[2],p[3],colors[i%colors.length]);
+    const spot=findClearMapPad(p[0],p[1],usedPads); usedPads.push(spot);
+    const target=[Math.max(-30,Math.min(30,spot.x*.28)),Math.max(-30,Math.min(30,spot.z*.28))];
+    jumpPad(spot.x,spot.z,p[2],target,colors[i%colors.length]);
     // A raised landing platform makes each trampoline useful and jumpable.
-    box(5.5,.55,5.5,p[3][0],4.3,p[3][1],colors[i%colors.length]);
-    box(5.9,.22,5.9,p[3][0],4.7,p[3][1],colors[i%colors.length],{deco:true});
+    box(5.5,.55,5.5,target[0],4.3,target[1],colors[i%colors.length]);
+    box(5.9,.22,5.9,target[0],4.7,target[1],colors[i%colors.length],{deco:true});
   });
   // Chest-high cover and stacked props create ambush lanes and hiding spots.
   [[-24,-4,5,2.2,0x46566d],[24,4,5,2.2,0x46566d],[-8,-26,4,2.6,0x6b4f30],[8,26,4,2.6,0x6b4f30],
