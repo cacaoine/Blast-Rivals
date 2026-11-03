@@ -904,6 +904,11 @@ WEAPONS.forEach(w=>{
 function wrapsForWeapon(wid){ return WRAPS.filter(wr=>WRAP_WEAPON[wr.id]===wid); }
 const KILL_REWARD=30, HEADSHOT_REWARD=45, WIN_BONUS=150, ROUND_GOAL=10;
 const BOT_NAMES=['RIVAL-ACE','RIVAL-NYX','RIVAL-BOLT','RIVAL-DUKE','RIVAL-ZED','RIVAL-KAI'];
+const BOT_COLORS=[0x4fa3d1,0x35d0ba,0xf2c14e,0x8e6cc0,0xff8fb2,0xe07b39,0x68e05f,0xb57cff];
+function botColor(name){
+  let hash=0; for(const ch of String(name)) hash=(hash*31+ch.charCodeAt(0))>>>0;
+  return BOT_COLORS[hash%BOT_COLORS.length];
+}
 
 /* ================= SAVE ================= */
 function defaults(){
@@ -2144,7 +2149,7 @@ function makeRig(color){
   return g;
 }
 function makeBot(name,pos){
-  const g=makeRig(0xd6404e);
+  const g=makeRig(botColor(name));
   g.position.set(pos[0],0,pos[2]);
   const choices=WEAPONS.filter(w=>!w.rocket), weapon=choices[Math.floor(Math.random()*choices.length)]||WEAPONS[0];
   return {name, mesh:g, hp:100, alive:true, respawn:0, target:null, retarget:0, shootCd:1+Math.random(),
