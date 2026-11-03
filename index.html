@@ -1936,8 +1936,13 @@ function addSharedMapFeatures(mapId){
   });
   // Low shelters leave a visible gap for peek-and-hide play.
   [[-34,26],[34,-26]].forEach((p,i)=>{
-    box(6,2.6,.35,p[0],1.3,p[1],0x33415f);
-    box(.35,2.6,5,p[0]+(i?2.8:-2.8),1.3,p[1],0x33415f);
+    // Split the back wall around a wide firing window. The player is covered
+    // at body height but can look and shoot through the opening.
+    box(1.35,2.6,.35,p[0]-2.32,1.3,p[1],0x33415f);
+    box(1.35,2.6,.35,p[0]+2.32,1.3,p[1],0x33415f);
+    box(6,.45,.35,p[0],2.38,p[1],0x33415f);
+    // One side panel gives concealment while the front and window stay open.
+    box(.35,1.55,2.4,p[0]+(i?2.8:-2.8),.78,p[1]-.9,0x33415f);
     box(6.4,.25,5.4,p[0],2.75,p[1],0x4f638c,{deco:true});
   });
 }
