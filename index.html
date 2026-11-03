@@ -1600,7 +1600,8 @@ function box(w,h,d,x,y,z,color,opts={}){
   if(opts.rotY) m.rotation.y=opts.rotY;
   scene.add(m);
   if(!opts.deco && !opts.rotY){
-    colliders.push({minX:x-w/2,maxX:x+w/2,minY:y-h/2,maxY:y+h/2,minZ:z-d/2,maxZ:z+d/2});
+    colliders.push({minX:x-w/2,maxX:x+w/2,minY:y-h/2,maxY:y+h/2,minZ:z-d/2,maxZ:z+d/2,
+      jumpable:!!opts.jumpable || (h<=3 && y-h/2<=0.05 && w>=1.4 && d>=1.4)});
     solidMeshes.push(m);
   } else if(!opts.deco && opts.rotY){ solidMeshes.push(m); }
   return m;
@@ -1608,7 +1609,8 @@ function box(w,h,d,x,y,z,color,opts={}){
 function cyl(r,h,x,y,z,color,deco){
   const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,14), new THREE.MeshLambertMaterial({color}));
   m.position.set(x,y,z); scene.add(m);
-  if(!deco){ colliders.push({minX:x-r,maxX:x+r,minY:y-h/2,maxY:y+h/2,minZ:z-r,maxZ:z+r}); solidMeshes.push(m); }
+  if(!deco){ colliders.push({minX:x-r,maxX:x+r,minY:y-h/2,maxY:y+h/2,minZ:z-r,maxZ:z+r,
+    jumpable:h<=2.4 && y-h/2<=0.05 && r>=0.55}); solidMeshes.push(m); }
   return m;
 }
 function ground(size,color){
@@ -1802,7 +1804,7 @@ function addSharedMapFeatures(mapId){
   });
   // Small climbable item piles: crates, barrels, and a few tall sightline blockers.
   [[-14,4],[14,-4],[-34,-8],[34,8],[0,-32],[0,32]].forEach((p,i)=>{
-    const w=i%2?2.4:2.8, h=i%3===0?2.2:1.5;
+    const w=i%2?2.4:2.8, h=i%3===0?1.2:0.95;
     box(w,h,w,p[0],h/2,p[1],i%2?0x8a6a42:0x6f7f91);
     if(i%2===0) cyl(.65,1.2,p[0]+w*.7,.6,p[1]+.4,0x8d5b38);
   });
@@ -3166,6 +3168,9 @@ const P_R=0.55, P_H=1.75, EYE=1.62;
 function collide(pos){
   for(const c of colliders){
     if(pos.y+P_H<c.minY+0.01 || pos.y>c.maxY-0.15) continue;
+    // Low props are climbable: let the player pass the side while rising,
+    // then let landingAt() place their feet on the top surface.
+    if(c.jumpable && pos.y<c.maxY-0.05) continue;
     const nx=Math.max(c.minX-P_R, Math.min(pos.x, c.maxX+P_R));
     const nz=Math.max(c.minZ-P_R, Math.min(pos.z, c.maxZ+P_R));
     if(nx===pos.x && nz===pos.z){ // center inside expanded box: push along smaller penetration
@@ -3179,6 +3184,15 @@ function collide(pos){
     }
   }
   const half=44; pos.x=Math.max(-half,Math.min(half,pos.x)); pos.z=Math.max(-half,Math.min(half,pos.z));
+}
+function landingAt(pos,fromY){
+  let top=-Infinity;
+  for(const c of colliders){
+    if(!c.jumpable || c.maxY<=top) continue;
+    if(pos.x>c.minX-P_R*.55 && pos.x<c.maxX+P_R*.55 && pos.z>c.minZ-P_R*.55 && pos.z<c.maxZ+P_R*.55
+      && fromY>=c.maxY-0.2 && pos.y<=c.maxY+0.2) top=c.maxY;
+  }
+  return top;
 }
 function groundAt(pos){
   let g=0;
@@ -3401,8 +3415,10 @@ function stepBot(bot,dt){
     const np=bot.mesh.position.clone().add(step);
     collide(np); // reuse player collision for bots
     if(bot.onGround && (dist<12 || Math.random()<dt*0.12) && Math.random()<0.18){ bot.vy=7.2; bot.onGround=false; }
-    const gy=groundAt(np); bot.vy-=22*dt; np.y+=bot.vy*dt;
-    if(np.y<=gy){ np.y=gy; bot.vy=0; bot.onGround=true; }
+    const previousY=np.y, gy=groundAt(np); bot.vy-=22*dt; np.y+=bot.vy*dt;
+    const landing=landingAt(np,previousY);
+    if(bot.vy<=0 && landing>gy && np.y<=landing+0.2){ np.y=landing; bot.vy=0; bot.onGround=true; }
+    else if(np.y<=gy){ np.y=gy; bot.vy=0; bot.onGround=true; }
     for(const p of mapPads){
       const dx=np.x-p.x,dz=np.z-p.z;
       if(np.y<=0.8 && dx*dx+dz*dz<p.r*p.r){ bot.vy=Math.max(bot.vy,p.vy); bot.onGround=false; if(p.pushTo) np.add(new THREE.Vector3(p.pushTo[0]-p.x,0,p.pushTo[1]-p.z).normalize().multiplyScalar(dt*3.5)); break; }
@@ -3490,10 +3506,12 @@ function animate(){
       G.pos.add(G.mvel.clone().multiplyScalar(dt));
       collide(G.pos);
       // gravity / jump
-      const gy=groundAt(G.pos);
+      const previousY=G.pos.y, gy=groundAt(G.pos);
       if(KEY['Space'] && G.onGround){ G.vy=7.6; G.onGround=false; }
       G.vy-=22*dt; G.pos.y+=G.vy*dt;
-      if(G.pos.y<=gy){ G.pos.y=gy; G.vy=0; G.onGround=true; } else G.onGround=false;
+      const landing=landingAt(G.pos,previousY);
+      if(G.vy<=0 && landing>gy && G.pos.y<=landing+0.2){ G.pos.y=landing; G.vy=0; G.onGround=true; }
+      else if(G.pos.y<=gy){ G.pos.y=gy; G.vy=0; G.onGround=true; } else G.onGround=false;
       // jump pads
       for(const p of mapPads){
         if(p.cd>0){ p.cd-=dt; continue; }
