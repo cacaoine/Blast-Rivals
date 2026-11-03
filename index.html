@@ -1810,8 +1810,12 @@ function addSharedMapFeatures(mapId){
     const target=[Math.max(-30,Math.min(30,spot.x*.28)),Math.max(-30,Math.min(30,spot.z*.28))];
     jumpPad(spot.x,spot.z,p[2],target,colors[i%colors.length]);
     // A raised landing platform makes each trampoline useful and jumpable.
-    box(5.5,.55,5.5,target[0],4.3,target[1],colors[i%colors.length]);
+    box(5.5,.55,5.5,target[0],4.3,target[1],colors[i%colors.length],{jumpable:true});
     box(5.9,.22,5.9,target[0],4.7,target[1],colors[i%colors.length],{deco:true});
+    // Give every raised platform its own nearby launch point so players can
+    // reliably reach it without hunting for a trampoline elsewhere.
+    const platformPadX=target[0]+(target[0]>=0?-4.7:4.7);
+    jumpPad(platformPadX,target[1],15,[target[0],target[1]],colors[(i+1)%colors.length]);
   });
   // Chest-high cover and stacked props create ambush lanes and hiding spots.
   [[-24,-4,5,2.2,0x46566d],[24,4,5,2.2,0x46566d],[-8,-26,4,2.6,0x6b4f30],[8,26,4,2.6,0x6b4f30],
