@@ -498,6 +498,7 @@
   #ammo{font-family:'Russo One',Rubik,sans-serif; font-size:28px;}
   #ammo small{font-size:15px; color:var(--dim);}
   #reload-note{color:var(--accent2); font-size:11.5px; height:14px;}
+  #ability-note{color:var(--own); font-size:10.5px; min-height:14px; margin-top:2px;}
   #score-box{left:50%; top:14px; transform:translateX(-50%); display:flex; gap:14px; align-items:center;
     font-family:'Russo One',Rubik,sans-serif; font-size:20px;}
   #score-box .you{color:var(--own);} #score-box .foe{color:var(--bad);}
@@ -716,7 +717,7 @@
   <div id="xhair"></div>
   <div id="hitmark"></div>
   <div class="hudpanel" id="hp-box"><span id="hp-num">100</span><div id="hp-bar"><i style="width:100%"></i></div></div>
-  <div class="hudpanel" id="ammo-box"><div id="wep-label">BLASTER</div><div id="ammo">15 <small>/ ∞</small></div><div id="reload-note"></div></div>
+  <div class="hudpanel" id="ammo-box"><div id="wep-label">BLASTER</div><div id="ammo">15 <small>/ ∞</small></div><div id="reload-note"></div><div id="ability-note"></div></div>
   <div class="hudpanel" id="score-box"><span class="you" id="s-you">0</span><span class="goal">FIRST TO 10</span><span class="foe" id="s-foe">0</span></div>
   <div class="hudpanel" id="bomb-box"><small>bombs</small>💣 <span id="bomb-n">0</span></div>
   <div class="hudpanel" id="board" hidden></div>
@@ -797,6 +798,22 @@ const WEAPONS = [
   {id:'atlas',name:'Atlas',price:2200,dmg:38,cd:0.34,auto:true,mag:18,reload:2.0,pellets:1,spread:0.014,desc:'Heavy all-purpose rifle with dependable control.',color:0x9cae8a},
   {id:'prism',name:'Prism',price:2000,dmg:31,cd:0.18,auto:true,mag:25,reload:1.7,pellets:1,spread:0.018,desc:'Refraction rounds balance speed and power.',color:0xff7ef2},
 ];
+const ABILITY_INFO={
+  scope:{name:'Scope In/Out',key:'F'},
+  doubleJump:{name:'Double Jump',key:'F'},
+  tripleJump:{name:'Triple Jump',key:'F'},
+  highJump:{name:'High Jump',key:'F',cooldown:5},
+  speed:{name:'Speed Burst',key:'F',cooldown:5},
+  dash:{name:'Combat Dash',key:'F',cooldown:5}
+};
+const WEAPON_ABILITIES={
+  blaster:'scope',hornet:'speed',boomstick:'doubleJump',judge:'highJump',warhawk:'scope',longshot:'scope',
+  meganuke:'highJump',railgun:'scope',scatter:'tripleJump',pulse:'speed',needle:'dash',frostbite:'highJump',
+  sunflare:'speed',vortex:'dash',sawblade:'doubleJump',cinder:'speed',trident:'tripleJump',echo:'speed',
+  quake:'highJump',silencer:'scope',comet:'dash',thorn:'tripleJump',monarch:'doubleJump',abyss:'scope',
+  flaregun:'highJump',atlas:'speed',prism:'tripleJump'
+};
+function weaponAbility(wid){ return WEAPON_ABILITIES[wid]||'doubleJump'; }
 const WEAPON_CAT={blaster:'Sidearm',judge:'Sidearm',monarch:'Sidearm', hornet:'SMG',needle:'SMG',sawblade:'SMG',echo:'SMG',thorn:'SMG',
   warhawk:'Rifle',cinder:'Rifle',silencer:'Rifle',comet:'Rifle',atlas:'Rifle', boomstick:'Shotgun',scatter:'Shotgun',trident:'Shotgun',
   longshot:'Sniper',frostbite:'Sniper',abyss:'Sniper', meganuke:'Heavy',vortex:'Heavy',quake:'Heavy',flaregun:'Heavy',
@@ -2079,10 +2096,18 @@ const BUILDERS={
     ice(5,6,4,-22,-14); ice(4,8,3,-26,-8); ice(6,3.4,5,20,16); ice(3,9,3,26,10);
     ice(4,5,4,-16,22); ice(5,4,3,14,-24); ice(3,7,3,8,-30);
     // igloo
-    const igloo=new THREE.Mesh(new THREE.SphereGeometry(4,14,10,0,Math.PI*2,0,Math.PI/2),
+    const igloo=new THREE.Mesh(new THREE.SphereGeometry(4,14,10,Math.PI/2-0.55,Math.PI*2-1.1,0,Math.PI/2),
       new THREE.MeshLambertMaterial({color:0xf4f8fc}));
     igloo.position.set(-32,0,26); scene.add(igloo);
-    colliders.push({minX:-36,maxX:-28,minY:0,maxY:3.6,minZ:22,maxZ:30}); solidMeshes.push(igloo);
+    // Open the front of the dome so players can enter the igloo.
+    colliders.push({minX:-36,maxX:-28,minY:0,maxY:3.6,minZ:22,maxZ:23});
+    colliders.push({minX:-36,maxX:-34,minY:0,maxY:3.6,minZ:23,maxZ:30});
+    colliders.push({minX:-30,maxX:-28,minY:0,maxY:3.6,minZ:23,maxZ:30});
+    const iglooFloor=new THREE.Mesh(new THREE.CylinderGeometry(3.25,3.25,.08,24),new THREE.MeshLambertMaterial({color:0xd8edf5}));
+    iglooFloor.position.set(-32,.04,26); scene.add(iglooFloor);
+    const iglooArch=new THREE.Mesh(new THREE.TorusGeometry(1.65,.18,8,18,Math.PI),new THREE.MeshLambertMaterial({color:0xd4eaf4}));
+    iglooArch.position.set(-32,1.7,30.02); iglooArch.rotation.y=Math.PI/2; scene.add(iglooArch);
+    solidMeshes.push(igloo);
     // snowy pines
     [[-36,-30],[-30,-36],[34,-28],[38,26],[30,36],[-12,-38],[12,38]].forEach(p=>tree(p[0],p[1],4,0x5c4630,0x2f6b52,'snow'));
     // aurora ribbons
@@ -2621,6 +2646,7 @@ addEventListener('keydown',e=>{
   if(G && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   if(G && !G.over){
     if(!G.lobby && e.code==='KeyR') startReload();
+    if(!G.lobby && e.code==='KeyF' && !e.repeat){ e.preventDefault(); activateWeaponAbility(); }
     const n=parseInt(e.key);
     if(!G.lobby && n>=1 && n<=save.owned.length) switchWeapon(save.owned[n-1]);
   }
@@ -2660,7 +2686,7 @@ function switchWeapon(id){
   G.wep=id; const w=currentWeapon();
   G.ammo = G.ammoBy[id]!=null ? G.ammoBy[id] : w.mag;
   G.cd=0.3;
-  buildViewModel(); updateHUD(); renderSlots();
+  resetAbilityState(); buildViewModel(); updateHUD(); renderSlots();
 }
 function fullAmmo(){ G.ammoBy={}; save.owned.forEach(id=>{ G.ammoBy[id]=currentWeaponIdMag(id); }); G.ammo=currentWeapon().mag; G.reloading=0; $('reload-note').textContent=''; }
 /* random spawn point clear of obstacles and away from `avoid` positions */
@@ -3008,6 +3034,7 @@ $('pad-mp').onclick=()=>{ padMode='mp'; $('pad-mp').classList.add('sel'); $('pad
 $('pad-cancel').onclick=()=>{ $('padsetup').style.display='none'; };
 $('pad-deploy').onclick=deployFromPad;
 function startLobbyWorld(){
+  camera.fov=75; camera.updateProjectionMatrix();
   remotes.forEach(r=>{ if(scene) scene.remove(r.mesh); }); remotes.clear();
   if(lobbyAvatar&&scene) scene.remove(lobbyAvatar); lobbyAvatar=null;
   if(vm){ camera.remove(vm); vm=null; }
@@ -3099,6 +3126,7 @@ function startGame(testId=null,practice=false){
       cd:0, reloading:0, hp:100, lastHurt:-99, kills:0, deaths:0, dead:false, deadT:0,
       pos:new THREE.Vector3(def.spawn[0],0,def.spawn[2]), vy:0, onGround:true, mvel:new THREE.Vector3(), slide:null,
       bots:[], mapName, def, shake:0, rockets:[], t:0, diff:0, diffTier:0, botLevel,
+      ability:{cooldown:0,speed:0,jumps:0,scope:false},
       baseDiff:Math.min(0.92, 0.18+(botLevel-1)*0.012) };
   lastAttacker=null;
   fullAmmo();
@@ -3116,7 +3144,7 @@ function startGame(testId=null,practice=false){
   if(mode==='mp')
     room.presence({lobby:false,playing:true, dead:false, map:save.map, name:save.name, avatarColor:avatarColor(), format:save.matchFormat||'1v1', score:0,
       x:+G.pos.x.toFixed(2), y:0, z:+G.pos.z.toFixed(2), yaw:+yaw.toFixed(3)}).catch(()=>{});
-  buildViewModel();
+  resetAbilityState(); buildViewModel();
   $('lobby').style.display='none'; $('hud').style.display='block';
   $('end').style.display='none'; $('death').style.display='none'; $('pause').style.display='none';
   $('feed').innerHTML=''; $('s-you').textContent='0'; $('s-foe').textContent='0';
@@ -3161,6 +3189,33 @@ function updateHUD(){
   bar.style.width=Math.max(0,G.hp)+'%';
   bar.className=G.hp<=30?'low':'';
   $('bomb-n').textContent=fmt(save.bombs);
+  updateAbilityHUD();
+}
+function updateAbilityHUD(){
+  const el=$('ability-note'); if(!el || !G || G.lobby){ if(el) el.textContent=''; return; }
+  const type=weaponAbility(G.wep), info=ABILITY_INFO[type], cd=G.ability?G.ability.cooldown:0;
+  el.textContent=cd>0?info.name+' · '+cd.toFixed(1)+'s':info.name+' · ['+info.key+']';
+}
+function resetAbilityState(){
+  if(!G || !G.ability) return;
+  G.ability.cooldown=0; G.ability.speed=0; G.ability.jumps=0; G.ability.scope=false;
+  camera.fov=75; camera.updateProjectionMatrix(); updateAbilityHUD();
+}
+function activateWeaponAbility(){
+  if(!G || G.lobby || G.over || G.dead || !G.ability) return;
+  const type=weaponAbility(G.wep), a=G.ability;
+  if(type==='scope'){
+    a.scope=!a.scope; camera.fov=a.scope?42:75; camera.updateProjectionMatrix(); updateAbilityHUD(); sfx('buy'); return;
+  }
+  if(a.cooldown>0) return;
+  if(type==='doubleJump' && !G.onGround && a.jumps<1){ G.vy=7.6; a.jumps++; G.onGround=false; sfx('buy'); return; }
+  if(type==='tripleJump' && !G.onGround && a.jumps<2){ G.vy=7.6; a.jumps++; G.onGround=false; sfx('buy'); return; }
+  if(type==='highJump'){ G.vy=15; G.onGround=false; a.cooldown=5; sfx('boom'); updateAbilityHUD(); return; }
+  if(type==='speed'){ a.speed=1.9; a.cooldown=5; sfx('buy'); updateAbilityHUD(); return; }
+  if(type==='dash'){
+    const f=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+    G.mvel.add(f.multiplyScalar(14)); a.cooldown=5; sfx('buy'); updateAbilityHUD();
+  }
 }
 
 /* ---------- collision ---------- */
@@ -3498,7 +3553,7 @@ function animate(){
       if(KEY['KeyW']||KEY['ArrowUp'])move.add(f); if(KEY['KeyS']||KEY['ArrowDown'])move.sub(f);
       if(KEY['KeyD']||KEY['ArrowRight'])move.add(r); if(KEY['KeyA']||KEY['ArrowLeft'])move.sub(r);
       const sprint=KEY['ShiftLeft']||KEY['ShiftRight'];
-      if(move.lengthSq()>0) move.normalize().multiplyScalar(sprint?9.4:6.4);
+      if(move.lengthSq()>0) move.normalize().multiplyScalar((sprint?9.4:6.4)*(G.ability.speed||1));
       // momentum: instant on normal ground, a long skid on ice
       let onIce=false;
       for(const iz of iceZones){ const dx=G.pos.x-iz.x, dz=G.pos.z-iz.z; if(G.pos.y<0.6 && dx*dx+dz*dz<iz.r*iz.r){ onIce=true; break; } }
@@ -3512,6 +3567,7 @@ function animate(){
       const landing=landingAt(G.pos,previousY);
       if(G.vy<=0 && landing>gy && G.pos.y<=landing+0.2){ G.pos.y=landing; G.vy=0; G.onGround=true; }
       else if(G.pos.y<=gy){ G.pos.y=gy; G.vy=0; G.onGround=true; } else G.onGround=false;
+      if(G.onGround) G.ability.jumps=0;
       // jump pads
       for(const p of mapPads){
         if(p.cd>0){ p.cd-=dt; continue; }
@@ -3538,6 +3594,8 @@ function animate(){
         if(G.pos.distanceTo(s.from)<2.1){ G.slide={t:0, from:s.from, mid:s.mid, to:s.to}; sfx('buy'); break; }
       }
     }
+    if(G.ability.cooldown>0){ G.ability.cooldown=Math.max(0,G.ability.cooldown-dt); updateAbilityHUD(); }
+    if(G.ability.speed>0){ G.ability.speed=Math.max(0,G.ability.speed-dt*1.8); if(G.ability.speed===0) updateAbilityHUD(); }
     // regen
     if(G.t-G.lastHurt>4 && G.hp<100){ G.hp=Math.min(100,G.hp+18*dt); updateHUD(); }
     // hold-to-fire works on every weapon; fire rate is the balance
@@ -3548,7 +3606,7 @@ function animate(){
       G.dead=false; G.hp=100; G.vy=0; G.mvel.set(0,0,0); G.slide=null;
       const sp=freeSpot(livingFoes(), 14) || G.def.spawn;
       G.pos.set(sp[0],0,sp[2]); faceCenter();
-      fullAmmo();
+      fullAmmo(); resetAbilityState();
       if(inMp()) room.presence({dead:false}).catch(()=>{});
       $('death').style.display='none'; $('dmgvig').style.opacity=0; updateHUD();
     }
