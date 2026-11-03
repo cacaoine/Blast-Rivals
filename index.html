@@ -1720,7 +1720,7 @@ function glowBox(w,h,d,x,y,z,color){
   m.position.set(x,y,z); scene.add(m); return m;
 }
 /* interactables: jump pads fling you up, slide gates carry you down, ice zones skid */
-const mapPads=[], mapSlides=[], iceZones=[], ladders=[];
+const mapPads=[], mapSlides=[], iceZones=[], ladders=[], mapToys=[];
 function jumpPad(x,z,vy,pushTo,color=0x35d0ba){
   const ring=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,0.24,20), new THREE.MeshBasicMaterial({color}));
   ring.position.set(x,0.12,z); scene.add(ring);
@@ -1728,6 +1728,21 @@ function jumpPad(x,z,vy,pushTo,color=0x35d0ba){
   core.position.set(x,0.2,z); scene.add(core);
   mapAnims.push((dt,t)=>{ const s=1+Math.sin(t*4+x*0.7)*0.1; ring.scale.set(s,1,s); });
   mapPads.push({x,z,r:1.8,vy,pushTo,cd:0});
+}
+function mapToy(x,z,color,label){
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.72,.9,.28,12),new THREE.MeshLambertMaterial({color:0x26344a}));
+  base.position.set(x,.14,z); scene.add(base);
+  const orb=new THREE.Mesh(new THREE.SphereGeometry(.42,12,8),new THREE.MeshBasicMaterial({color}));
+  orb.position.set(x,.72,z); scene.add(orb);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.72,.06,8,20),new THREE.MeshBasicMaterial({color}));
+  ring.rotation.x=Math.PI/2; ring.position.set(x,.3,z); scene.add(ring);
+  const toy={x,z,label,orb,ring,cd:0,pulse:0}; mapToys.push(toy);
+  mapAnims.push((dt,t)=>{
+    toy.pulse=Math.max(0,toy.pulse-dt*3);
+    orb.position.y=.72+Math.sin(t*2.4+x*.2+z*.1)*.08;
+    orb.scale.setScalar(1+toy.pulse*.45);
+    ring.rotation.z+=dt*(.7+toy.pulse*3);
+  });
 }
 function ladder(x,z,bottom,top,tx,tz,color){
   // rails + rungs on the tower face; the climb zone is what actually lifts you
@@ -1816,6 +1831,11 @@ function addSharedMapFeatures(mapId){
     // reliably reach it without hunting for a trampoline elsewhere.
     const platformPadX=target[0]+(target[0]>=0?-4.7:4.7);
     jumpPad(platformPadX,target[1],15,[target[0],target[1]],colors[(i+1)%colors.length]);
+  });
+  // Harmless signal beacons add more things to touch and activate in every map.
+  [[-20,0],[20,0],[0,-20],[0,20],[-30,30],[30,-30]].forEach((p,i)=>{
+    const spot=findClearMapPad(p[0],p[1],usedPads); usedPads.push(spot);
+    mapToy(spot.x,spot.z,colors[(i+2)%colors.length],['Beacon','Pulse node','Signal orb'][i%3]);
   });
   // Chest-high cover and stacked props create ambush lanes and hiding spots.
   [[-24,-4,5,2.2,0x46566d],[24,4,5,2.2,0x46566d],[-8,-26,4,2.6,0x6b4f30],[8,26,4,2.6,0x6b4f30],
@@ -2307,7 +2327,7 @@ function startPreview(mapId){
   if(G) return;
   if(vm){ camera.remove(vm); vm=null; }
   scene=new THREE.Scene(); colliders=[]; solidMeshes=[]; tracers.length=0; particles.length=0;
-  mapAnims.length=0; mapPads.length=0; mapSlides.length=0; iceZones.length=0; ladders.length=0;
+  mapAnims.length=0; mapPads.length=0; mapSlides.length=0; iceZones.length=0; ladders.length=0; mapToys.length=0;
   scene.add(camera);
   const previewMap=MAP_LIST.some(m=>m.id===mapId)?mapId:'arena';
   BUILDERS[previewMap]();
@@ -2890,6 +2910,21 @@ function lobbyPad(label,x,z,color){
   box(.25,2.2,.25,x-2.2,1.1,z,color,{deco:true}); box(.25,2.2,.25,x+2.2,1.1,z,color,{deco:true}); box(4.65,.22,.25,x,2.18,z,color,{deco:true});
   const t=lobbyLabel(label,color); t.position.set(x,3.05,z); scene.add(t); m.userData.lobbyFormat=label; lobbyInteractables.push(m);
 }
+function lobbyToy(label,x,z,color){
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.9,1.05,.3,12),new THREE.MeshLambertMaterial({color:0x293650}));
+  base.position.set(x,.15,z); scene.add(base);
+  const toy=new THREE.Mesh(new THREE.OctahedronGeometry(.62,1),new THREE.MeshLambertMaterial({color,emissive:color,emissiveIntensity:.35}));
+  toy.position.set(x,1.05,z); scene.add(toy);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.95,.07,8,24),new THREE.MeshBasicMaterial({color}));
+  ring.rotation.x=Math.PI/2; ring.position.set(x,.34,z); scene.add(ring);
+  const t=lobbyLabel(label,color); t.position.set(x,2.15,z); t.scale.set(3.2,.6,1); scene.add(t);
+  toy.userData.lobbyToy=label; toy.userData.lobbyToyState={pulse:0}; lobbyInteractables.push(toy);
+  mapAnims.push((dt,time)=>{
+    const state=toy.userData.lobbyToyState; state.pulse=Math.max(0,state.pulse-dt*3);
+    toy.rotation.y+=dt*(.8+state.pulse*3); toy.position.y=1.05+Math.sin(time*2+x*.2)*.08;
+    toy.scale.setScalar(1+state.pulse*.35); ring.rotation.z+=dt*.8;
+  });
+}
 function lobbyWeapon(wid,x,z){
   const w=WEAPONS.find(v=>v.id===wid), base=new THREE.Mesh(new THREE.BoxGeometry(1.9,.55,1.9),new THREE.MeshLambertMaterial({color:0x2a3348}));
   base.position.set(x,.28,z); scene.add(base);
@@ -2994,7 +3029,7 @@ function lobbyAim(){
   lobbyRay.setFromCamera(new THREE.Vector2(0,0),camera);
   const hit=lobbyRay.intersectObjects(lobbyInteractables,true)[0];
   let object=hit&&hit.object;
-  while(object && !object.userData.lobbyWeapon && !object.userData.lobbyFormat) object=object.parent;
+  while(object && !object.userData.lobbyWeapon && !object.userData.lobbyFormat && !object.userData.lobbyToy) object=object.parent;
   return hit && hit.distance<16 ? object : null;
 }
 let padFormat='1v1', padMode='solo';
@@ -3032,6 +3067,11 @@ function interactLobby(){
   const o=lobbyAim(); if(!o) return;
   if(o.userData.lobbyWeapon){ openWeaponModal(o.userData.lobbyWeapon); sfx('buy'); }
   else if(o.userData.lobbyFormat) lobbyPortal(o.userData.lobbyFormat);
+  else if(o.userData.lobbyToy){
+    const state=o.userData.lobbyToyState; if(state) state.pulse=1;
+    mySay={m:`${o.userData.lobbyToy} activated — cosmetic only`,t:Date.now()};
+    pushPlazaChat(save.name,mySay.m); sfx('buy');
+  }
 }
 $('pad-solo').onclick=()=>{ padMode='solo'; $('pad-solo').classList.add('sel'); $('pad-mp').classList.remove('sel'); $('bot-level-wrap').hidden=false; };
 $('pad-mp').onclick=()=>{ padMode='mp'; $('pad-mp').classList.add('sel'); $('pad-solo').classList.remove('sel'); $('bot-level-wrap').hidden=true; };
@@ -3043,7 +3083,7 @@ function startLobbyWorld(){
   if(lobbyAvatar&&scene) scene.remove(lobbyAvatar); lobbyAvatar=null;
   if(vm){ camera.remove(vm); vm=null; }
   scene=new THREE.Scene(); scene.background=new THREE.Color(0x10141c); colliders=[]; solidMeshes=[]; tracers.length=0; particles.length=0; lobbyInteractables=[]; scene.add(camera);
-  mapAnims.length=0; mapPads.length=0; mapSlides.length=0; iceZones.length=0; ladders.length=0;
+  mapAnims.length=0; mapPads.length=0; mapSlides.length=0; iceZones.length=0; ladders.length=0; mapToys.length=0;
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(110,110),new THREE.MeshLambertMaterial({color:0x202b42})); ground.rotation.x=-Math.PI/2; scene.add(ground);
   const grid=new THREE.GridHelper(100,25,0x536486,0x2c3856); grid.position.y=.015; scene.add(grid);
   [[0,1,-40,80,2,1],[0,1,40,80,2,1],[-40,1,0,1,2,80],[40,1,0,1,2,80]].forEach(v=>box(v[3],v[4],v[5],v[0],v[1],v[2],0x202b3c));
@@ -3052,6 +3092,19 @@ function startLobbyWorld(){
   box(18,.35,13,0,.18,8,0x34466d,{deco:true}); box(12,.42,8,0,.42,8,0x4d5f8d,{deco:true});
   [[-8,2,2,0xff7a2f],[8,2,2,0x35d0ba],[-8,2,14,0xffb35c],[8,2,14,0x8e6cc0]].forEach(v=>{ box(.8,4,.8,v[0],v[1],v[2],v[3],{deco:true}); glowBox(.95,.18,.95,v[0],4.05,v[2],v[3]); });
   const spawnSign=lobbyLabel('SPAWN PLAZA',0xffd166); spawnSign.position.set(0,4.8,8); spawnSign.scale.set(5.2,.9,1); scene.add(spawnSign);
+  // Extra plaza dressing: benches, planters, lamps, crates, and display stands.
+  [[-13,1,0xff7a2f],[13,1,0x35d0ba],[-13,15,0xffb35c],[13,15,0x8e6cc0]].forEach(v=>{
+    box(3.8,.35,1.05,v[0],.45,8,0x6d4d38,{deco:true});
+    box(.3,1.1,1.35,v[0]-1.45,.65,8,0x3b465f,{deco:true}); box(.3,1.1,1.35,v[0]+1.45,.65,8,0x3b465f,{deco:true});
+    cyl(.75,.3,v[0],.25,v[1]+7,v[2],true); cyl(.48,1.8,v[0],1.05,v[1]+7,0x3b465f,true);
+    glowBox(.7,.7,.7,v[0],2.1,v[1]+7,v[2]);
+  });
+  [[-16,2],[16,2],[-16,14],[16,14]].forEach((p,i)=>{
+    cyl(.82,.35,p[0],.18,p[1],0x43536d,true); cyl(.64,1.1,p[0],.88,p[1],i%2?0x35d0ba:0xff7a2f,true);
+    const plant=new THREE.Mesh(new THREE.ConeGeometry(.75,1.5,7),new THREE.MeshLambertMaterial({color:i%2?0x49a86f:0x6cc08a})); plant.position.set(p[0],1.8,p[1]); scene.add(plant);
+  });
+  lobbyToy('Color spinner',-6.8,4,0xff7a2f); lobbyToy('Light orb',6.8,4,0x35d0ba);
+  lobbyToy('Holo button',-6.8,12,0xffd166); lobbyToy('Dance crystal',6.8,12,0x8e6cc0);
   // Block-built gear shop facade.
   box(58,4,5,0,2,-35,0x33415f); box(62,1,7,0,5,-35,0x4f638c); box(48,.28,.35,0,5.55,-32.2,0xff7a2f,{deco:true});
   [[-25,0xff7a2f],[-15,0xffb35c],[-5,0x35d0ba],[5,0x4fa3d1],[15,0x8e6cc0],[25,0xff8fb2]].forEach(v=>{ box(5,2.1,.35,v[0],1.2,-32.2,v[1],{deco:true}); });
@@ -3094,6 +3147,7 @@ function stepLobby(dt){
   if(G.t-G.lobbyPresenceAt>.1){ G.lobbyPresenceAt=G.t; publishLobbyPresence(); }
   if(hubDirty || G.t-(G.syncAt||0)>0.5){ hubDirty=false; G.syncAt=G.t; syncLobbyRemotes(); }
   remotes.forEach(rm=>stepRemote(rm,dt));
+  for(const fn of mapAnims) fn(dt,G.t);
   // third-person camera behind the avatar; pitch tilts it up and down
   const pc=Math.max(-0.5,Math.min(1.1,pitch));
   const back=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(5.2*Math.cos(pc));
@@ -3104,6 +3158,7 @@ function stepLobby(dt){
     if(o && o.userData.lobbyWeapon){ const w=WEAPONS.find(x=>x.id===o.userData.lobbyWeapon); const owned=save.owned.includes(w.id);
       pr.innerHTML=`<b>Click</b> · ${esc(w.name)} · ${save.equipped===w.id?'equipped':owned?'owned — equip':(w.price?`💣 ${fmt(w.price)}`:'free')}`; pr.hidden=false; }
     else if(o && o.userData.lobbyFormat){ pr.innerHTML=`<b>Click</b> · play ${esc(o.userData.lobbyFormat)}${o.userData.lobbyFormat==='1v1'?' vs bots':' online'}`; pr.hidden=false; }
+    else if(o && o.userData.lobbyToy){ pr.innerHTML=`<b>Click / E</b> · ${esc(o.userData.lobbyToy)} · just for fun`; pr.hidden=false; }
     else pr.hidden=true;
     updateTags(); updateBubbles();
     if(G.t-(G.countAt||0)>1){ G.countAt=G.t; renderPlazaCount(); }
@@ -3119,7 +3174,7 @@ function startGame(testId=null,practice=false){
   scene=new THREE.Scene(); colliders=[]; solidMeshes=[]; tracers.length=0; particles.length=0;
   scene.add(camera);
   const mode=(save.mode==='mp' && room && !practice)?'mp':'solo';
-  mapAnims.length=0; mapPads.length=0; mapSlides.length=0; iceZones.length=0; ladders.length=0;
+  mapAnims.length=0; mapPads.length=0; mapSlides.length=0; iceZones.length=0; ladders.length=0; mapToys.length=0;
   const def=BUILDERS[save.map]();
   addSharedMapFeatures(save.map);
   const mapName=MAP_LIST.find(m=>m.id===save.map).name;
@@ -3580,6 +3635,14 @@ function animate(){
           p.cd=0.6; G.vy=p.vy; G.onGround=false; sfx('boom'); G.shake=Math.min(0.6,G.shake+0.25);
           burst(new THREE.Vector3(p.x,0.4,p.z), 0x35d0ba, 14, 5, 0.1);
           if(p.pushTo) G.mvel.copy(new THREE.Vector3(p.pushTo[0]-p.x,0,p.pushTo[1]-p.z).normalize().multiplyScalar(3.5));
+        }
+      }
+      // Touching a beacon only triggers a visual/audio ping; it grants no XP or rewards.
+      for(const toy of mapToys){
+        if(toy.cd>0){ toy.cd-=dt; continue; }
+        const dx=G.pos.x-toy.x, dz=G.pos.z-toy.z;
+        if(dx*dx+dz*dz<2.4*2.4 && G.pos.y<1.5){
+          toy.cd=3; toy.pulse=1; burst(new THREE.Vector3(toy.x,.8,toy.z),0x8fffe8,10,3,.12); sfx('buy');
         }
       }
       // ladders: face the rungs and hold forward (or Space) to climb, back to descend
