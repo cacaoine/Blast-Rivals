@@ -3886,8 +3886,8 @@ function animate(){
       if(G.vy<=0 && landing>gy && G.pos.y<=landing+0.2){ G.pos.y=landing; G.vy=0; G.onGround=true; }
       else if(G.pos.y<=gy){ G.pos.y=gy; G.vy=0; G.onGround=true; } else G.onGround=false;
       if(G.onGround) G.ability.jumps=0;
-      // jump pads
-      for(const p of mapPads){
+      // Surface jump pads never affect the underground room or its stair ride.
+      if(!G.underground && !G.secretDescend) for(const p of mapPads){
         if(p.cd>0){ p.cd-=dt; continue; }
         const dx=G.pos.x-p.x, dz=G.pos.z-p.z;
         if(dx*dx+dz*dz<p.r*p.r && G.pos.y<0.8){
