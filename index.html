@@ -1858,13 +1858,23 @@ function addSecretBunker(x,z){
   undergroundZones.push(zone);
   // One large room runs beneath the whole arena. It has a real floor, walls,
   // and ceiling below the terrain rather than being hidden inside props.
-  box(roomSize,.2,roomSize,0,-3.9,0,0x26384a,{solid:true});
-  box(.35,4,roomSize,-half,-2,0,0x344b61); box(.35,4,roomSize,half,-2,0,0x344b61);
-  box(roomSize,4,.35,0,-2,-half,0x344b61); box(roomSize,4,.35,0,-2,half,0x344b61);
-  const ceiling=new THREE.Mesh(new THREE.BoxGeometry(roomSize,.18,roomSize),new THREE.MeshLambertMaterial({color:0x1b2a3a,transparent:true,opacity:.98,side:THREE.DoubleSide}));
-  ceiling.position.set(0,-.08,0); ceiling.userData.secretCeiling=true; scene.add(ceiling); zone.ceiling=ceiling;
+  box(roomSize,.2,roomSize,0,-3.9,0,0x163b58,{solid:true});
+  box(.35,4,roomSize,-half,-2,0,0x4d2f87); box(.35,4,roomSize,half,-2,0,0x1d8b91);
+  box(roomSize,4,.35,0,-2,-half,0x7d3f75); box(roomSize,4,.35,0,-2,half,0x285aa8);
+  const ceiling=new THREE.Mesh(new THREE.BoxGeometry(roomSize,.18,roomSize),new THREE.MeshLambertMaterial({color:0x1b2a3a,transparent:true,opacity:.16,side:THREE.DoubleSide}));
+  ceiling.position.set(0,-.08,0); ceiling.visible=false; ceiling.userData.secretCeiling=true; scene.add(ceiling); zone.ceiling=ceiling;
   colliders.push({minX:-half,maxX:half,minY:-.17,maxY:.01,minZ:-half,maxZ:half});
   const light=new THREE.PointLight(0x35d0ba,1.8,28); light.position.set(entryX,-2.2,entryZ); scene.add(light);
+  // Bright interior landmarks make the room feel intentional rather than like
+  // an empty gray void.
+  [[x-3,z-2,0xff4fa3],[x+3,z-2,0x35d0ba],[x-3,z+3,0xffd166],[x+3,z+3,0x8e6cc0]].forEach(p=>{
+    box(.65,3.1,.65,p[0],-2.25,p[1],p[2],{solid:true});
+    glowBox(.82,.12,.82,p[0],-.66,p[1],p[2]);
+  });
+  box(5,.28,1.2,x,-3.55,z,0x2c78a0,{solid:true});
+  glowBox(4.5,.08,.12,x,-3.35,z-.58,0x35d0ba);
+  box(1.5,1.1,1.5,x+2,-3.25,z+1.8,0x9a5a2e,{solid:true});
+  cyl(.55,1.4,x-2,-3.1,z+1.8,0x5f76a2,false);
   const keypad=box(.9,1.55,.28,entryX,.82,entryZ,0x172536,{solid:true});
   keypad.userData.secretKeypad=true; zone.keypad=keypad;
   const keypadScreen=glowBox(.58,.3,.035,entryX,1.18,entryZ-.16,0x35d0ba);
@@ -1877,7 +1887,8 @@ function addSecretBunker(x,z){
 }
 function setSecretBunkerView(zone,inside){
   if(!zone||!zone.ceiling) return;
-  zone.ceiling.material.opacity=inside?.16:.98;
+  zone.ceiling.visible=inside;
+  zone.ceiling.material.opacity=.16;
   zone.ceiling.material.transparent=true;
 }
 const SECRET_ACCESS_HASH='6f25df51f5393382fcaa49a2189c27e3756408c635c7f62a034c03fc74ab5d6d';
@@ -1907,6 +1918,12 @@ async function submitSecretKeypad(){
   if(!(await secretAccessMatches($('secret-keypad-input').value))){ $('secret-keypad-error').textContent='Access denied.'; return; }
   const z=secretBunker(); if(z) z.unlocked=true;
   closeSecretKeypad(); sfx('buy');
+}
+function exitSecretBunker(){
+  if(!G||!G.underground||G.secretDescend) return;
+  const z=G.underground;
+  G.secretDescend={zone:z,start:G.pos.clone(),end:new THREE.Vector3(z.entryX,0,z.entryZ),t:0,leaving:true};
+  G.vy=0; G.mvel.set(0,0,0);
 }
 function ladder(x,z,bottom,top,tx,tz,color){
   // rails + rungs on the tower face; the climb zone is what actually lifts you
@@ -2883,7 +2900,7 @@ addEventListener('keydown',e=>{
   KEY[e.code]=true;
   if(G && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   if(G && !G.over){
-    if(!G.lobby && e.code==='KeyE' && !e.repeat){ e.preventDefault(); openSecretKeypad(); }
+    if(!G.lobby && e.code==='KeyE' && !e.repeat){ e.preventDefault(); if(G.underground) exitSecretBunker(); else openSecretKeypad(); }
     if(!G.lobby && e.code==='KeyR') startReload();
     if(!G.lobby && e.code==='KeyF' && !e.repeat){ e.preventDefault(); activateWeaponAbility(); }
     const n=parseInt(e.key);
@@ -3857,9 +3874,7 @@ function animate(){
       // The one secret spot is a concealed hatch into a below-map bunker.
       const bunker=undergroundZones[0];
       if(G.underground){
-        if(G.pos.x>bunker.entryX-.75 && G.pos.x<bunker.entryX+.75 && G.pos.z>bunker.entryZ-1.2){
-          G.secretDescend={zone:G.underground,start:G.pos.clone(),end:new THREE.Vector3(bunker.entryX,0,bunker.entryZ),t:0,leaving:true}; G.vy=0; G.mvel.set(0,0,0);
-        }
+        if(G.pos.x>bunker.entryX-1.5 && G.pos.x<bunker.entryX+1.5 && G.pos.z>bunker.entryZ-2.5) exitSecretBunker();
       } else if(bunker && bunker.unlocked && !G.secretDescend && G.pos.x>bunker.entryX-.75 && G.pos.x<bunker.entryX+.75 && G.pos.z>bunker.entryZ-1.2 && G.pos.z<bunker.entryZ+1.2 && G.pos.y<=0.2){
         G.secretDescend={zone:bunker,start:G.pos.clone(),end:new THREE.Vector3(bunker.entryX,bunker.floor+.05,bunker.z),t:0,leaving:false}; G.vy=0; G.mvel.set(0,0,0);
       }
