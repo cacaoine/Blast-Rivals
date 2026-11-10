@@ -1726,7 +1726,7 @@ function box(w,h,d,x,y,z,color,opts={}){
   scene.add(m);
   if((!opts.deco || opts.solid) && !opts.rotY){
     colliders.push({minX:x-w/2,maxX:x+w/2,minY:y-h/2,maxY:y+h/2,minZ:z-d/2,maxZ:z+d/2,
-      jumpable:!!opts.jumpable || (h<=3 && w>=1.4 && d>=1.4)});
+      jumpable:!!opts.jumpable || (h<=3 && w>=1.4 && d>=1.4), underground:!!opts.underground});
     solidMeshes.push(m);
   } else if(!opts.deco && opts.rotY){ solidMeshes.push(m); }
   return m;
@@ -1860,23 +1860,23 @@ function addSecretBunker(x,z){
   undergroundZones.push(zone);
   // One large room runs beneath the whole arena. It has a real floor, walls,
   // and ceiling below the terrain rather than being hidden inside props.
-  box(roomSize,.2,roomSize,0,-3.9,0,0x163b58,{solid:true});
-  box(.35,4,roomSize,-half,-2,0,0x4d2f87); box(.35,4,roomSize,half,-2,0,0x1d8b91);
-  box(roomSize,4,.35,0,-2,-half,0x7d3f75); box(roomSize,4,.35,0,-2,half,0x285aa8);
+  box(roomSize,.2,roomSize,0,-3.9,0,0x163b58,{solid:true,underground:true});
+  box(.35,4,roomSize,-half,-2,0,0x4d2f87,{underground:true}); box(.35,4,roomSize,half,-2,0,0x1d8b91,{underground:true});
+  box(roomSize,4,.35,0,-2,-half,0x7d3f75,{underground:true}); box(roomSize,4,.35,0,-2,half,0x285aa8,{underground:true});
   const ceiling=new THREE.Mesh(new THREE.BoxGeometry(roomSize,.18,roomSize),new THREE.MeshLambertMaterial({color:0x1b2a3a,transparent:true,opacity:.16,side:THREE.DoubleSide}));
   ceiling.position.set(0,-.08,0); ceiling.visible=false; ceiling.userData.secretCeiling=true; scene.add(ceiling); zone.ceiling=ceiling;
-  colliders.push({minX:-half,maxX:half,minY:-.17,maxY:.01,minZ:-half,maxZ:half});
+  colliders.push({minX:-half,maxX:half,minY:-.17,maxY:.01,minZ:-half,maxZ:half,underground:true});
   const light=new THREE.PointLight(0x35d0ba,1.8,28); light.position.set(entryX,-2.2,entryZ); scene.add(light);
   // Bright interior landmarks make the room feel intentional rather than like
   // an empty gray void.
   [[x-3,z-2,0xff4fa3],[x+3,z-2,0x35d0ba],[x-3,z+3,0xffd166],[x+3,z+3,0x8e6cc0]].forEach(p=>{
-    box(.65,3.1,.65,p[0],-2.25,p[1],p[2],{solid:true});
+    box(.65,3.1,.65,p[0],-2.25,p[1],p[2],{solid:true,underground:true});
     glowBox(.82,.12,.82,p[0],-.66,p[1],p[2]);
   });
-  box(5,.28,1.2,x,-3.55,z,0x2c78a0,{solid:true});
+  box(5,.28,1.2,x,-3.55,z,0x2c78a0,{solid:true,underground:true});
   glowBox(4.5,.08,.12,x,-3.35,z-.58,0x35d0ba);
-  box(1.5,1.1,1.5,x+2,-3.25,z+1.8,0x9a5a2e,{solid:true});
-  cyl(.55,1.4,x-2,-3.1,z+1.8,0x5f76a2,false);
+  box(1.5,1.1,1.5,x+2,-3.25,z+1.8,0x9a5a2e,{solid:true,underground:true});
+  const bunkerCrate=cyl(.55,1.4,x-2,-3.1,z+1.8,0x5f76a2,false); if(colliders.length) colliders[colliders.length-1].underground=true;
   const keypad=box(.9,1.55,.28,entryX,.82,entryZ,0x172536,{solid:true});
   keypad.userData.secretKeypad=true; zone.keypad=keypad;
   const keypadScreen=glowBox(.58,.3,.035,entryX,1.18,entryZ-.16,0x35d0ba);
@@ -2984,13 +2984,19 @@ function freeSpot(avoid,minDist){
   return null;
 }
 function isValidSpawn(x,z,avoid,minDist){
-  for(const c of colliders){ if(c.minY<2 && x>c.minX-1.2 && x<c.maxX+1.2 && z>c.minZ-1.2 && z<c.maxZ+1.2) return false; }
+  for(const c of colliders){ if(c.underground) continue; if(c.minY<2 && x>c.minX-1.2 && x<c.maxX+1.2 && z>c.minZ-1.2 && z<c.maxZ+1.2) return false; }
   for(const a of avoid){ const dx=a.x-x, dz=a.z-z; if(dx*dx+dz*dz<minDist*minDist) return false; }
   return true;
 }
+function cornerSpot(index,avoid){
+  const corners=[[-34,34],[34,34],[-34,-34],[34,-34]], base=corners[index%corners.length];
+  const offsets=[[0,0],[0,5],[5,0],[-5,0],[0,-5],[5,5],[-5,5],[5,-5],[-5,-5]];
+  for(const [dx,dz] of offsets){ const x=base[0]+dx,z=base[1]+dz; if(isValidSpawn(x,z,avoid,14)) return [x,0,z]; }
+  return freeSpot(avoid,14);
+}
 function botSpawn(bot){
   const avoid=[G.pos,...livingFoes(),bot.mesh.position];
-  let sp=freeSpot(avoid,16);
+  let sp=cornerSpot(Math.max(1,G.bots.indexOf(bot)+1),avoid);
   if(!sp) sp=freeSpot([G.pos,bot.mesh.position],8);
   if(!sp) sp=bot.spawnAt.slice(); // only possible when the map is genuinely full
   bot.spawnAt=sp.slice();
@@ -3447,12 +3453,12 @@ function startGame(testId=null,practice=false){
       baseDiff:Math.min(0.92, 0.18+(botLevel-1)*0.012) };
   lastAttacker=null;
   fullAmmo();
-  // randomized player spawn every round
-  const ps=freeSpot([], 0); if(ps) G.pos.set(ps[0],0,ps[2]);
+  // Start the player and bots in separate map corners.
+  const ps=cornerSpot(0,[]); if(ps) G.pos.set(ps[0],0,ps[2]);
   if(mode==='solo'){
     const nBots=Math.max(1,botCountForFormat(save.matchFormat||'1v1'));
     for(let i=0;i<nBots;i++){
-      const sp=freeSpot([G.pos,...G.bots.map(b=>b.mesh.position)], 16) || def.bots[i%def.bots.length];
+      const sp=cornerSpot(i+1,[G.pos,...G.bots.map(b=>b.mesh.position)]) || def.bots[i%def.bots.length];
       const bot=makeBot(BOT_NAMES[i%BOT_NAMES.length], sp); bot.lastSpawn=sp.slice();
       G.bots.push(bot);
     }
@@ -3951,7 +3957,7 @@ function animate(){
     G.deadT-=dt; $('death-t').textContent=Math.ceil(Math.max(0,G.deadT));
     if(G.deadT<=0 && !G.over){
       G.dead=false; G.hp=100; G.vy=0; G.mvel.set(0,0,0); G.slide=null;
-      const sp=freeSpot(livingFoes(), 14) || G.def.spawn;
+      const sp=cornerSpot(0,livingFoes()) || G.def.spawn;
       G.pos.set(sp[0],0,sp[2]); faceCenter();
       fullAmmo(); resetAbilityState();
       if(inMp()) room.presence({dead:false}).catch(()=>{});
