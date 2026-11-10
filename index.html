@@ -2860,7 +2860,9 @@ document.addEventListener('mousemove',e=>{
   if(document.pointerLockElement!==canvas){ if(!(G.lobby && exploring && dragLook)) return; }   // no lock: drag to look
   yaw-=e.movementX*0.0022;
   if(G.lobby) pitch+=e.movementY*0.0022; else pitch-=e.movementY*0.0022;
-  pitch=Math.max(-1.45,Math.min(1.45,pitch));
+  // Battle view can look almost straight up/down; keep the lobby's wider
+  // third-person pitch limits unchanged.
+  pitch=G.lobby?Math.max(-0.5,Math.min(1.1,pitch)):Math.max(-1.56,Math.min(1.56,pitch));
 });
 let firing=false;
 addEventListener('mousedown',e=>{
