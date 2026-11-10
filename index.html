@@ -696,7 +696,7 @@
 <div class="secret-keypad" id="secret-keypad" role="dialog" aria-modal="true" aria-labelledby="secret-keypad-title">
   <div class="secret-keypad-card">
     <h2 id="secret-keypad-title">Keypad</h2>
-    <p>Enter access code.</p>
+    <p>Enter password.</p>
     <input id="secret-keypad-input" type="password" autocomplete="off" spellcheck="false" aria-label="Access code">
     <div class="secret-keypad-error" id="secret-keypad-error"></div>
     <div class="btnrow"><button class="obtn" id="secret-keypad-cancel" type="button">Cancel</button><button class="obtn primary" id="secret-keypad-submit" type="button">Unlock</button></div>
@@ -1892,10 +1892,14 @@ function nearSecretKeypad(){
 }
 function openSecretKeypad(){
   if(!nearSecretKeypad()) return;
+  G.paused=true; G.keypadOpen=true;
   document.exitPointerLock&&document.exitPointerLock();
   $('secret-keypad-input').value=''; $('secret-keypad-error').textContent=''; $('secret-keypad').classList.add('open'); $('secret-keypad-input').focus();
 }
-function closeSecretKeypad(){ $('secret-keypad').classList.remove('open'); }
+function closeSecretKeypad(){
+  $('secret-keypad').classList.remove('open');
+  if(G&&!G.over){ G.keypadOpen=false; G.paused=false; showPause(false); lockPointer(); }
+}
 async function submitSecretKeypad(){
   if(!(await secretAccessMatches($('secret-keypad-input').value))){ $('secret-keypad-error').textContent='Access denied.'; return; }
   const z=secretBunker(); if(z) z.unlocked=true;
@@ -2867,6 +2871,7 @@ document.addEventListener('mousemove',e=>{
 let firing=false;
 addEventListener('mousedown',e=>{
   if(G && G.lobby && exploring && e.button===0 && !(e.target && e.target.closest('button,input,select,a,.weapon-modal,#chatbox'))){ dragLook=true; interactLobby(); return; }
+  if(G && !G.lobby && e.button===0 && nearSecretKeypad() && !(e.target&&e.target.closest('.secret-keypad'))){ openSecretKeypad(); return; }
   if(G && document.pointerLockElement===canvas && e.button===0){ if(G.lobby) return; firing=true; tryFire(); }
 });
 addEventListener('mouseup',e=>{ if(e.button===0){ firing=false; dragLook=false; } });
