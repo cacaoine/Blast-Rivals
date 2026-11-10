@@ -1838,6 +1838,8 @@ function addSecretBunker(x,z){
   box(.35,4,8,x-4,-2,z,0x344b61); box(.35,4,8,x+4,-2,z,0x344b61);
   box(7.6,4,.35,x,-2,z-4,0x344b61);
   box(2.1,4,.35,x-2.75,-2,z+4,0x344b61); box(2.1,4,.35,x+2.75,-2,z+4,0x344b61);
+  const ceiling=new THREE.Mesh(new THREE.BoxGeometry(7.6,.18,7.6),new THREE.MeshLambertMaterial({color:0x1b2a3a,transparent:true,opacity:.98,side:THREE.DoubleSide}));
+  ceiling.position.set(x,-.08,z); ceiling.userData.secretCeiling=true; scene.add(ceiling); zone.ceiling=ceiling;
   for(let i=0;i<5;i++){
     const a=i/4, sy=-.25-a*.72;
     box(2.4,.18,1.0,x,sy,z+4.5-a*2.2,0x4f638c,{solid:true});
@@ -1848,6 +1850,11 @@ function addSecretBunker(x,z){
   box(1.4,1.5,1.4,x-2.6,.75,zone.entryZ+1.1,0x6f5236);
   box(1.25,1.9,1.25,x+2.5,.95,zone.entryZ+.5,0x8a6a42);
   cyl(.7,1.4,x+2.4,.7,zone.entryZ+2.1,0x8d5b38);
+}
+function setSecretBunkerView(zone,inside){
+  if(!zone||!zone.ceiling) return;
+  zone.ceiling.material.opacity=inside?.16:.98;
+  zone.ceiling.material.transparent=true;
 }
 function ladder(x,z,bottom,top,tx,tz,color){
   // rails + rungs on the tower face; the climb zone is what actually lifts you
@@ -2642,6 +2649,10 @@ function syncRemotes(){
     live.add(p.peer);
     let r=remotes.get(p.peer);
     const pr=p.presence;
+    if(pr.hidden===true){
+      if(r){ r.mesh.visible=false; if(r.tag) r.tag.hidden=true; }
+      return;
+    }
     if(!r){
       r={mesh:makeRig((p.presence&&p.presence.avatarColor)||peerColor(p.peer),p.presence&&p.presence.avatarItem), tx:0,ty:0,tz:0,tyaw:0, name:peerName(p.peer), snaps:[], phase:0, wep:null, hp:100, tag:null};
       if(typeof pr.x==='number'){ r.mesh.position.set(+pr.x||0,Math.max(0,+pr.y||0),+pr.z||0); }
@@ -3460,7 +3471,7 @@ function tryFire(){
     const targets=inMp()? remoteParts() : botParts();
     // The bunker has a line-of-sight shaft through the map surface; visible
     // walls and props still block shots, but the terrain plane does not.
-    const blockers=G.underground?solidMeshes.filter(m=>!m.userData.terrain):solidMeshes;
+    const blockers=G.underground?solidMeshes.filter(m=>!m.userData.terrain&&!m.userData.secretCeiling):solidMeshes;
     const hits=ray.intersectObjects([...targets,...blockers],false);
     const h=hits.find(x=>x.distance>0.3);
     const end=h?h.point:origin.clone().add(dir.clone().multiplyScalar(120));
@@ -3631,6 +3642,9 @@ function stepBot(bot,dt){
     bot.reloading-=dt;
     if(bot.reloading<=0) bot.ammo=bot.weapon.mag;
   }
+  if(G.underground){
+    bot.windup=0; bot.target=null; bot.strafe=0; bot.mvel?.set?.(0,0,0); return;
+  }
   const eye=camera.getWorldPosition(new THREE.Vector3());
   const toPlayer=G.pos.clone().sub(bot.mesh.position); toPlayer.y=0;
   const dist=toPlayer.length();
@@ -3748,10 +3762,10 @@ function animate(){
       const bunker=undergroundZones[0];
       if(G.underground){
         if(G.pos.x>bunker.x-1.1 && G.pos.x<bunker.x+1.1 && G.pos.z>bunker.z+3.1){
-          G.underground=null; G.pos.set(bunker.x,0,bunker.entryZ); G.vy=0; G.onGround=true; sfx('buy');
+          setSecretBunkerView(G.underground,false); G.underground=null; G.pos.set(bunker.x,0,bunker.entryZ); G.vy=0; G.onGround=true; sfx('buy');
         }
       } else if(bunker && G.pos.x>bunker.x-1.4 && G.pos.x<bunker.x+1.4 && G.pos.z>bunker.entryZ-1.1 && G.pos.z<bunker.entryZ+1.1 && G.pos.y<=0.2){
-        G.underground=bunker; G.pos.set(bunker.x,bunker.floor+.05,bunker.z+1.8); G.vy=0; G.onGround=true; sfx('buy');
+        G.underground=bunker; setSecretBunkerView(bunker,true); G.pos.set(bunker.x,bunker.floor+.05,bunker.z+1.8); G.vy=0; G.onGround=true; sfx('buy');
       }
       // gravity / jump
       const previousY=G.pos.y, gy=groundAt(G.pos);
@@ -3834,7 +3848,8 @@ function animate(){
 
   /* opponents */
   if(inMp()){
-    room.presence({wep:G.wep, x:+G.pos.x.toFixed(2), y:+G.pos.y.toFixed(2), z:+G.pos.z.toFixed(2),
+    const secret=!!G.underground;
+    room.presence({wep:G.wep, hidden:secret, x:secret?0:+G.pos.x.toFixed(2), y:secret?0:+G.pos.y.toFixed(2), z:secret?38:+G.pos.z.toFixed(2),
       yaw:+yaw.toFixed(3), hp:Math.round(G.hp), score:G.kills}).catch(()=>{});
     syncRemotes();
     let best=0;
