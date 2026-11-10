@@ -1849,31 +1849,28 @@ function mapToy(x,z,color,label){
   });
 }
 function addSecretBunker(x,z){
-  const zone={x,z,floor:-3.8,minX:x-3.8,maxX:x+3.8,minZ:z-3.8,maxZ:z+3.8,entryZ:z+5.1,unlocked:false};
+  const roomSize=79, half=roomSize/2;
+  const entryX=x-1.65, entryZ=z+4.45;
+  const zone={x,z,floor:-3.8,minX:-half,maxX:half,minZ:-half,maxZ:half,entryX,entryZ,unlocked:false};
   undergroundZones.push(zone);
-  // The room is below the visible map floor. Every wall is a visible mesh
-  // with matching collision; the front stays open for the stair/entry path.
-  box(7.6,.2,7.6,x,-3.9,z,0x26384a,{solid:true});
-  box(.35,4,8,x-4,-2,z,0x344b61); box(.35,4,8,x+4,-2,z,0x344b61);
-  box(7.6,4,.35,x,-2,z-4,0x344b61);
-  box(2.1,4,.35,x-2.75,-2,z+4,0x344b61); box(2.1,4,.35,x+2.75,-2,z+4,0x344b61);
-  const ceiling=new THREE.Mesh(new THREE.BoxGeometry(7.6,.18,7.6),new THREE.MeshLambertMaterial({color:0x1b2a3a,transparent:true,opacity:.98,side:THREE.DoubleSide}));
-  ceiling.position.set(x,-.08,z); ceiling.userData.secretCeiling=true; scene.add(ceiling); zone.ceiling=ceiling;
-  for(let i=0;i<5;i++){
-    const a=i/4, sy=-.25-a*.72;
-    box(2.4,.18,1.0,x,sy,z+4.5-a*2.2,0x4f638c,{solid:true});
-  }
-  const light=new THREE.PointLight(0x35d0ba,1.8,16); light.position.set(x,-2.2,z); scene.add(light);
-  const hatch=new THREE.Mesh(new THREE.BoxGeometry(2.8,.16,2.2),new THREE.MeshLambertMaterial({color:0x4f638c}));
-  hatch.position.set(x,.08,zone.entryZ); scene.add(hatch); zone.hatch=hatch;
-  const keypad=box(.9,1.55,.28,x-1.65,.82,zone.entryZ-.55,0x172536,{solid:true});
+  // One large room runs beneath the whole arena. It has a real floor, walls,
+  // and ceiling below the terrain rather than being hidden inside props.
+  box(roomSize,.2,roomSize,0,-3.9,0,0x26384a,{solid:true});
+  box(.35,4,roomSize,-half,-2,0,0x344b61); box(.35,4,roomSize,half,-2,0,0x344b61);
+  box(roomSize,4,.35,0,-2,-half,0x344b61); box(roomSize,4,.35,0,-2,half,0x344b61);
+  const ceiling=new THREE.Mesh(new THREE.BoxGeometry(roomSize,.18,roomSize),new THREE.MeshLambertMaterial({color:0x1b2a3a,transparent:true,opacity:.98,side:THREE.DoubleSide}));
+  ceiling.position.set(0,-.08,0); ceiling.userData.secretCeiling=true; scene.add(ceiling); zone.ceiling=ceiling;
+  colliders.push({minX:-half,maxX:half,minY:-.17,maxY:.01,minZ:-half,maxZ:half});
+  const light=new THREE.PointLight(0x35d0ba,1.8,28); light.position.set(entryX,-2.2,entryZ); scene.add(light);
+  const keypad=box(.9,1.55,.28,entryX,.82,entryZ,0x172536,{solid:true});
   keypad.userData.secretKeypad=true; zone.keypad=keypad;
-  const keypadScreen=glowBox(.58,.3,.035,x-1.65,1.18,zone.entryZ-.71,0x35d0ba);
-  for(let row=0;row<2;row++) for(let col=0;col<3;col++) glowBox(.1,.1,.035,x-1.88+col*.23,.72-row*.2,zone.entryZ-.71,0xffd166);
+  const keypadScreen=glowBox(.58,.3,.035,entryX,1.18,entryZ-.16,0x35d0ba);
+  for(let row=0;row<2;row++) for(let col=0;col<3;col++) glowBox(.1,.1,.035,entryX-.23+col*.23,.72-row*.2,entryZ-.16,0xffd166);
   mapAnims.push((dt,t)=>{ keypadScreen.material.opacity=.55+Math.abs(Math.sin(t*2.2))*.35; keypadScreen.material.transparent=true; });
-  box(1.4,1.5,1.4,x-2.6,.75,zone.entryZ+1.1,0x6f5236);
-  box(1.25,1.9,1.25,x+2.5,.95,zone.entryZ+.5,0x8a6a42);
-  cyl(.7,1.4,x+2.4,.7,zone.entryZ+2.1,0x8d5b38);
+  // Props conceal the access point; there is no visible hatch or opening.
+  box(1.4,1.5,1.4,entryX-1.8,.75,entryZ+1.1,0x6f5236);
+  box(1.25,1.9,1.25,entryX+2.2,.95,entryZ+.5,0x8a6a42);
+  cyl(.7,1.4,entryX+2.1,.7,entryZ+2.1,0x8d5b38);
 }
 function setSecretBunkerView(zone,inside){
   if(!zone||!zone.ceiling) return;
@@ -1891,7 +1888,7 @@ function secretBunker(){ return undergroundZones[0]||null; }
 function nearSecretKeypad(){
   if(!G||G.lobby||G.over||G.dead) return false;
   const z=secretBunker(); if(!z||G.underground) return false;
-  return Math.hypot(G.pos.x-(z.x-1.65),G.pos.z-(z.entryZ-.55))<2.5;
+  return Math.hypot(G.pos.x-z.entryX,G.pos.z-z.entryZ)<2.5;
 }
 function openSecretKeypad(){
   if(!nearSecretKeypad()) return;
@@ -1901,7 +1898,7 @@ function openSecretKeypad(){
 function closeSecretKeypad(){ $('secret-keypad').classList.remove('open'); }
 async function submitSecretKeypad(){
   if(!(await secretAccessMatches($('secret-keypad-input').value))){ $('secret-keypad-error').textContent='Access denied.'; return; }
-  const z=secretBunker(); if(z){ z.unlocked=true; z.hatch.visible=false; }
+  const z=secretBunker(); if(z) z.unlocked=true;
   closeSecretKeypad(); sfx('buy');
 }
 function ladder(x,z,bottom,top,tx,tz,color){
@@ -3820,11 +3817,11 @@ function animate(){
       // The one secret spot is a concealed hatch into a below-map bunker.
       const bunker=undergroundZones[0];
       if(G.underground){
-        if(G.pos.x>bunker.x-1.1 && G.pos.x<bunker.x+1.1 && G.pos.z>bunker.z+3.1){
-          G.secretDescend={zone:G.underground,start:G.pos.clone(),end:new THREE.Vector3(bunker.x,0,bunker.entryZ),t:0,leaving:true}; G.vy=0; G.mvel.set(0,0,0);
+        if(G.pos.x>bunker.entryX-.75 && G.pos.x<bunker.entryX+.75 && G.pos.z>bunker.entryZ-1.2){
+          G.secretDescend={zone:G.underground,start:G.pos.clone(),end:new THREE.Vector3(bunker.entryX,0,bunker.entryZ),t:0,leaving:true}; G.vy=0; G.mvel.set(0,0,0);
         }
-      } else if(bunker && bunker.unlocked && !G.secretDescend && G.pos.x>bunker.x-1.4 && G.pos.x<bunker.x+1.4 && G.pos.z>bunker.entryZ-1.1 && G.pos.z<bunker.entryZ+1.1 && G.pos.y<=0.2){
-        G.secretDescend={zone:bunker,start:G.pos.clone(),end:new THREE.Vector3(bunker.x,bunker.floor+.05,bunker.z+1.8),t:0,leaving:false}; G.vy=0; G.mvel.set(0,0,0);
+      } else if(bunker && bunker.unlocked && !G.secretDescend && G.pos.x>bunker.entryX-.75 && G.pos.x<bunker.entryX+.75 && G.pos.z>bunker.entryZ-1.2 && G.pos.z<bunker.entryZ+1.2 && G.pos.y<=0.2){
+        G.secretDescend={zone:bunker,start:G.pos.clone(),end:new THREE.Vector3(bunker.entryX,bunker.floor+.05,bunker.z),t:0,leaving:false}; G.vy=0; G.mvel.set(0,0,0);
       }
       // gravity / jump
       const previousY=G.pos.y, gy=groundAt(G.pos);
