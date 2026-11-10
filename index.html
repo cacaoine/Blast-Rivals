@@ -1941,7 +1941,9 @@ async function submitSecretKeypad(){
 function exitSecretBunker(){
   if(!G||!G.underground||G.secretDescend) return;
   const z=G.underground;
-  G.secretDescend={zone:z,start:G.pos.clone(),end:new THREE.Vector3(z.entryX,0,z.entryZ),t:0,leaving:true};
+  // Land well in front of the keypad, outside its collider and outside the
+  // small entry trigger, so the exit cannot immediately loop back inside.
+  G.secretDescend={zone:z,start:G.pos.clone(),end:new THREE.Vector3(z.entryX,0,z.entryZ-2.8),t:0,leaving:true};
   G.vy=0; G.mvel.set(0,0,0);
 }
 function ladder(x,z,bottom,top,tx,tz,color){
