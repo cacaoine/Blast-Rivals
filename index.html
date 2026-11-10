@@ -1866,8 +1866,11 @@ function addSecretBunker(x,z){
   const light=new THREE.PointLight(0x35d0ba,1.8,16); light.position.set(x,-2.2,z); scene.add(light);
   const hatch=new THREE.Mesh(new THREE.BoxGeometry(2.8,.16,2.2),new THREE.MeshLambertMaterial({color:0x4f638c}));
   hatch.position.set(x,.08,zone.entryZ); scene.add(hatch); zone.hatch=hatch;
-  const keypad=box(.7,1.25,.22,x-1.9,.68,zone.entryZ-.25,0x202b3c,{solid:true});
+  const keypad=box(.9,1.55,.28,x-1.65,.82,zone.entryZ-.55,0x172536,{solid:true});
   keypad.userData.secretKeypad=true; zone.keypad=keypad;
+  const keypadScreen=glowBox(.58,.3,.035,x-1.65,1.18,zone.entryZ-.71,0x35d0ba);
+  for(let row=0;row<2;row++) for(let col=0;col<3;col++) glowBox(.1,.1,.035,x-1.88+col*.23,.72-row*.2,zone.entryZ-.71,0xffd166);
+  mapAnims.push((dt,t)=>{ keypadScreen.material.opacity=.55+Math.abs(Math.sin(t*2.2))*.35; keypadScreen.material.transparent=true; });
   box(1.4,1.5,1.4,x-2.6,.75,zone.entryZ+1.1,0x6f5236);
   box(1.25,1.9,1.25,x+2.5,.95,zone.entryZ+.5,0x8a6a42);
   cyl(.7,1.4,x+2.4,.7,zone.entryZ+2.1,0x8d5b38);
@@ -1888,7 +1891,7 @@ function secretBunker(){ return undergroundZones[0]||null; }
 function nearSecretKeypad(){
   if(!G||G.lobby||G.over||G.dead) return false;
   const z=secretBunker(); if(!z||G.underground) return false;
-  return Math.hypot(G.pos.x-(z.x-1.9),G.pos.z-(z.entryZ-.25))<2.3;
+  return Math.hypot(G.pos.x-(z.x-1.65),G.pos.z-(z.entryZ-.55))<2.5;
 }
 function openSecretKeypad(){
   if(!nearSecretKeypad()) return;
