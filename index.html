@@ -476,6 +476,13 @@
   .avatar-views button{border:1px solid var(--line); background:var(--panel2); color:var(--dim); border-radius:7px; padding:7px 3px; cursor:pointer; font:inherit; font-size:11px;}
   .avatar-views button.sel{border-color:var(--own); color:var(--own); background:rgba(53,208,186,.1);}
   @media (max-width:560px){.avatar-studio{grid-template-columns:1fr;}.avatar-preview-shell{min-height:220px;}#avatar-preview-canvas{height:220px;}}
+  .secret-keypad{position:fixed; inset:0; z-index:75; display:none; place-items:center; background:rgba(7,10,16,.78); backdrop-filter:blur(5px);}
+  .secret-keypad.open{display:grid;}
+  .secret-keypad-card{width:min(340px,calc(100% - 32px)); padding:20px; border:1px solid var(--own); border-radius:16px; background:var(--panel); box-shadow:0 24px 90px rgba(0,0,0,.65); text-align:center;}
+  .secret-keypad-card h2{font-size:21px; color:var(--own); letter-spacing:1px;}
+  .secret-keypad-card p{margin-top:6px; color:var(--dim); font-size:13px;}
+  .secret-keypad-card input{width:100%; margin-top:14px; padding:11px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text); font:inherit; text-align:center; letter-spacing:1px;}
+  .secret-keypad-error{min-height:18px; margin-top:7px; color:var(--bad); font-size:12px;}
   .settings-note{color:var(--dim); font-size:11px; line-height:1.45; margin-top:10px;}
   .settings-error{color:var(--bad); min-height:16px; font-size:11px; margin-top:8px;}
   @media (max-width:560px){ .modal-hero{grid-template-columns:1fr;} .modal-hero img{height:76px;} }
@@ -684,6 +691,15 @@
     <div class="modal-options" id="weapon-modal-skins"></div>
     <div class="modal-section-title">Weapon-specific wraps</div>
     <div class="modal-options" id="weapon-modal-wraps"></div>
+  </div>
+</div>
+<div class="secret-keypad" id="secret-keypad" role="dialog" aria-modal="true" aria-labelledby="secret-keypad-title">
+  <div class="secret-keypad-card">
+    <h2 id="secret-keypad-title">Keypad</h2>
+    <p>Enter access code.</p>
+    <input id="secret-keypad-input" type="password" autocomplete="off" spellcheck="false" aria-label="Access code">
+    <div class="secret-keypad-error" id="secret-keypad-error"></div>
+    <div class="btnrow"><button class="obtn" id="secret-keypad-cancel" type="button">Cancel</button><button class="obtn primary" id="secret-keypad-submit" type="button">Unlock</button></div>
   </div>
 </div>
 
@@ -1348,6 +1364,9 @@ $('settings-avatar-color').addEventListener('input',updateAvatarPreview);
 $('settings-avatar-item').addEventListener('change',updateAvatarPreview);
 document.querySelectorAll('[data-avatar-view]').forEach(b=>b.onclick=()=>setAvatarPreviewView(b.dataset.avatarView));
 addEventListener('resize',resizeAvatarPreview);
+$('secret-keypad-cancel').onclick=closeSecretKeypad;
+$('secret-keypad-submit').onclick=submitSecretKeypad;
+$('secret-keypad-input').addEventListener('keydown',e=>{ if(e.key==='Enter') submitSecretKeypad(); if(e.key==='Escape') closeSecretKeypad(); });
 function setAuthMode(m){
   authMode=m;
   $('tab-login').classList.toggle('sel',m==='login'); $('tab-signup').classList.toggle('sel',m==='signup');
@@ -1830,7 +1849,7 @@ function mapToy(x,z,color,label){
   });
 }
 function addSecretBunker(x,z){
-  const zone={x,z,floor:-3.8,minX:x-3.8,maxX:x+3.8,minZ:z-3.8,maxZ:z+3.8,entryZ:z+5.1};
+  const zone={x,z,floor:-3.8,minX:x-3.8,maxX:x+3.8,minZ:z-3.8,maxZ:z+3.8,entryZ:z+5.1,unlocked:false};
   undergroundZones.push(zone);
   // The room is below the visible map floor. Every wall is a visible mesh
   // with matching collision; the front stays open for the stair/entry path.
@@ -1846,7 +1865,9 @@ function addSecretBunker(x,z){
   }
   const light=new THREE.PointLight(0x35d0ba,1.8,16); light.position.set(x,-2.2,z); scene.add(light);
   const hatch=new THREE.Mesh(new THREE.BoxGeometry(2.8,.16,2.2),new THREE.MeshLambertMaterial({color:0x4f638c}));
-  hatch.position.set(x,.08,zone.entryZ); scene.add(hatch);
+  hatch.position.set(x,.08,zone.entryZ); scene.add(hatch); zone.hatch=hatch;
+  const keypad=box(.7,1.25,.22,x-1.9,.68,zone.entryZ-.25,0x202b3c,{solid:true});
+  keypad.userData.secretKeypad=true; zone.keypad=keypad;
   box(1.4,1.5,1.4,x-2.6,.75,zone.entryZ+1.1,0x6f5236);
   box(1.25,1.9,1.25,x+2.5,.95,zone.entryZ+.5,0x8a6a42);
   cyl(.7,1.4,x+2.4,.7,zone.entryZ+2.1,0x8d5b38);
@@ -1855,6 +1876,30 @@ function setSecretBunkerView(zone,inside){
   if(!zone||!zone.ceiling) return;
   zone.ceiling.material.opacity=inside?.16:.98;
   zone.ceiling.material.transparent=true;
+}
+const SECRET_ACCESS_HASH='6f25df51f5393382fcaa49a2189c27e3756408c635c7f62a034c03fc74ab5d6d';
+async function secretAccessMatches(value){
+  if(!window.crypto?.subtle) return false;
+  const data=new TextEncoder().encode(value), digest=await crypto.subtle.digest('SHA-256',data);
+  const hash=[...new Uint8Array(digest)].map(v=>v.toString(16).padStart(2,'0')).join('');
+  return hash===SECRET_ACCESS_HASH;
+}
+function secretBunker(){ return undergroundZones[0]||null; }
+function nearSecretKeypad(){
+  if(!G||G.lobby||G.over||G.dead) return false;
+  const z=secretBunker(); if(!z||G.underground) return false;
+  return Math.hypot(G.pos.x-(z.x-1.9),G.pos.z-(z.entryZ-.25))<2.3;
+}
+function openSecretKeypad(){
+  if(!nearSecretKeypad()) return;
+  document.exitPointerLock&&document.exitPointerLock();
+  $('secret-keypad-input').value=''; $('secret-keypad-error').textContent=''; $('secret-keypad').classList.add('open'); $('secret-keypad-input').focus();
+}
+function closeSecretKeypad(){ $('secret-keypad').classList.remove('open'); }
+async function submitSecretKeypad(){
+  if(!(await secretAccessMatches($('secret-keypad-input').value))){ $('secret-keypad-error').textContent='Access denied.'; return; }
+  const z=secretBunker(); if(z){ z.unlocked=true; z.hatch.visible=false; }
+  closeSecretKeypad(); sfx('buy');
 }
 function ladder(x,z,bottom,top,tx,tz,color){
   // rails + rungs on the tower face; the climb zone is what actually lifts you
@@ -2799,6 +2844,7 @@ addEventListener('keydown',e=>{
   KEY[e.code]=true;
   if(G && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   if(G && !G.over){
+    if(!G.lobby && e.code==='KeyE' && !e.repeat){ e.preventDefault(); openSecretKeypad(); }
     if(!G.lobby && e.code==='KeyR') startReload();
     if(!G.lobby && e.code==='KeyF' && !e.repeat){ e.preventDefault(); activateWeaponAbility(); }
     const n=parseInt(e.key);
@@ -3315,7 +3361,7 @@ function startGame(testId=null,practice=false){
   const startingWeapon=practice?testId:save.equipped;
   G={ over:false, mode, practice, wep:startingWeapon, ammo:currentWeaponIdMag(startingWeapon), ammoBy:{}, reserve:Infinity,
       cd:0, reloading:0, hp:100, lastHurt:-99, kills:0, deaths:0, dead:false, deadT:0,
-      pos:new THREE.Vector3(def.spawn[0],0,def.spawn[2]), vy:0, onGround:true, mvel:new THREE.Vector3(), slide:null, underground:null,
+      pos:new THREE.Vector3(def.spawn[0],0,def.spawn[2]), vy:0, onGround:true, mvel:new THREE.Vector3(), slide:null, underground:null, secretDescend:null,
       bots:[], mapName, def, shake:0, rockets:[], t:0, diff:0, diffTier:0, botLevel,
       ability:{cooldown:0,speed:0,jumps:0,scope:false},
       baseDiff:Math.min(0.92, 0.18+(botLevel-1)*0.012) };
@@ -3729,7 +3775,15 @@ function animate(){
 
   /* player movement */
   if(!G.dead){
-    if(G.slide){
+    if(G.secretDescend){
+      const d=G.secretDescend; d.t=Math.min(1,d.t+dt/.85); const k=d.t;
+      G.pos.lerpVectors(d.start,d.end,k); G.vy=0; G.mvel.set(0,0,0);
+      if(k>=1){
+        if(d.leaving){ setSecretBunkerView(d.zone,false); G.underground=null; }
+        else { G.underground=d.zone; setSecretBunkerView(d.zone,true); }
+        G.secretDescend=null; G.onGround=true;
+      }
+    } else if(G.slide){
       // riding a slide: follow a curve from the gate, through the tube, to the splash-down
       const s=G.slide; s.t+=dt/1.15;
       if(s.t>=1){
@@ -3762,10 +3816,10 @@ function animate(){
       const bunker=undergroundZones[0];
       if(G.underground){
         if(G.pos.x>bunker.x-1.1 && G.pos.x<bunker.x+1.1 && G.pos.z>bunker.z+3.1){
-          setSecretBunkerView(G.underground,false); G.underground=null; G.pos.set(bunker.x,0,bunker.entryZ); G.vy=0; G.onGround=true; sfx('buy');
+          G.secretDescend={zone:G.underground,start:G.pos.clone(),end:new THREE.Vector3(bunker.x,0,bunker.entryZ),t:0,leaving:true}; G.vy=0; G.mvel.set(0,0,0);
         }
-      } else if(bunker && G.pos.x>bunker.x-1.4 && G.pos.x<bunker.x+1.4 && G.pos.z>bunker.entryZ-1.1 && G.pos.z<bunker.entryZ+1.1 && G.pos.y<=0.2){
-        G.underground=bunker; setSecretBunkerView(bunker,true); G.pos.set(bunker.x,bunker.floor+.05,bunker.z+1.8); G.vy=0; G.onGround=true; sfx('buy');
+      } else if(bunker && bunker.unlocked && !G.secretDescend && G.pos.x>bunker.x-1.4 && G.pos.x<bunker.x+1.4 && G.pos.z>bunker.entryZ-1.1 && G.pos.z<bunker.entryZ+1.1 && G.pos.y<=0.2){
+        G.secretDescend={zone:bunker,start:G.pos.clone(),end:new THREE.Vector3(bunker.x,bunker.floor+.05,bunker.z+1.8),t:0,leaving:false}; G.vy=0; G.mvel.set(0,0,0);
       }
       // gravity / jump
       const previousY=G.pos.y, gy=groundAt(G.pos);
