@@ -982,7 +982,7 @@ const AVATAR_ITEMS=[
 
 /* ================= SAVE ================= */
 function defaults(){
-  return {bombs:150, owned:['blaster'], equipped:'blaster', map:'arena', mode:'solo', matchFormat:'1v1', botLevel:1, winStreak:0, bestWinStreak:0, avatarColor:'#4fa3d1', avatarItem:'none',
+  return {bombs:150, owned:['blaster'], equipped:'blaster', map:'arena', mode:'solo', matchFormat:'1v1', botLevel:1, winStreak:0, bestWinStreak:0, avatarColor:'#4fa3d1', avatarItem:'none', secretKeypadFails:0, secretKeypadDay:'',
           name:'RIVAL-'+Math.floor(1000+Math.random()*9000),
           ownedSkins:[], skins:{}, ownedWraps:[], wrap:{}, roundsWon:0, level:1, xp:0, totalKills:0, headshots:0,
           eventKey:'', eventCasesEarned:0, eventCasesOpened:0, eventTasks:[], eventStats:{kills:0,headshots:0,wins:0,bombs:0,damage:0}, updatedAt:0};
@@ -1125,7 +1125,7 @@ function genCode(){
 function profileBody(){
   return {bombs:save.bombs, owned:save.owned, equipped:save.equipped, ownedSkins:save.ownedSkins,
     skins:save.skins, ownedWraps:save.ownedWraps, wrap:save.wrap, name:save.name,
-    roundsWon:save.roundsWon||0, level:save.level||1, xp:save.xp||0, totalKills:save.totalKills||0, headshots:save.headshots||0, matchFormat:save.matchFormat||'1v1', botLevel:save.botLevel||save.level||1, winStreak:save.winStreak||0, bestWinStreak:save.bestWinStreak||0, avatarColor:save.avatarColor||'#4fa3d1', avatarItem:save.avatarItem||'none',
+    roundsWon:save.roundsWon||0, level:save.level||1, xp:save.xp||0, totalKills:save.totalKills||0, headshots:save.headshots||0, matchFormat:save.matchFormat||'1v1', botLevel:save.botLevel||save.level||1, winStreak:save.winStreak||0, bestWinStreak:save.bestWinStreak||0, avatarColor:save.avatarColor||'#4fa3d1', avatarItem:save.avatarItem||'none', secretKeypadFails:save.secretKeypadFails||0, secretKeypadDay:save.secretKeypadDay||'',
     eventKey:save.eventKey, eventCasesEarned:save.eventCasesEarned||0, eventCasesOpened:save.eventCasesOpened||0, eventTasks:save.eventTasks||[], eventStats:save.eventStats||{}, map:save.map, mode:save.mode, updatedAt:Date.now()};
 }
 function mergeProfile(d){
@@ -1144,6 +1144,8 @@ function mergeProfile(d){
   if(typeof d.bestWinStreak==='number') save.bestWinStreak=Math.max(save.bestWinStreak||0, Math.floor(d.bestWinStreak));
   if(typeof d.avatarColor==='string' && /^#[0-9a-f]{6}$/i.test(d.avatarColor)) save.avatarColor=d.avatarColor;
   if(typeof d.avatarItem==='string' && AVATAR_ITEMS.some(x=>x.id===d.avatarItem)) save.avatarItem=d.avatarItem;
+  if(typeof d.secretKeypadFails==='number') save.secretKeypadFails=Math.max(0,Math.min(3,Math.floor(d.secretKeypadFails)));
+  if(typeof d.secretKeypadDay==='string') save.secretKeypadDay=d.secretKeypadDay;
   if(d.eventKey===save.eventKey){
     if(Array.isArray(d.eventTasks)) d.eventTasks.forEach((v,i)=>{ if(v) save.eventTasks[i]=true; });
     if(typeof d.eventCasesEarned==='number') save.eventCasesEarned=Math.max(save.eventCasesEarned||0,Math.min(5,Math.floor(d.eventCasesEarned)));
@@ -1892,6 +1894,12 @@ function setSecretBunkerView(zone,inside){
   zone.ceiling.material.transparent=true;
 }
 const SECRET_ACCESS_HASH='6f25df51f5393382fcaa49a2189c27e3756408c635c7f62a034c03fc74ab5d6d';
+function secretDayKey(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function resetSecretLockIfNewDay(){
+  const today=secretDayKey();
+  if(save.secretKeypadDay!==today){ save.secretKeypadDay=today; save.secretKeypadFails=0; persist(); }
+}
+function secretKeypadLocked(){ resetSecretLockIfNewDay(); return (save.secretKeypadFails||0)>=3; }
 async function secretAccessMatches(value){
   if(!window.crypto?.subtle) return false;
   const data=new TextEncoder().encode(value), digest=await crypto.subtle.digest('SHA-256',data);
@@ -1906,16 +1914,27 @@ function nearSecretKeypad(){
 }
 function openSecretKeypad(){
   if(!nearSecretKeypad()) return;
+  const locked=secretKeypadLocked();
   G.paused=true; G.keypadOpen=true;
   document.exitPointerLock&&document.exitPointerLock();
-  $('secret-keypad-input').value=''; $('secret-keypad-error').textContent=''; $('secret-keypad').classList.add('open'); $('secret-keypad-input').focus();
+  $('secret-keypad-input').value=''; $('secret-keypad-input').disabled=locked; $('secret-keypad-submit').disabled=locked;
+  $('secret-keypad-error').textContent=locked?'Keypad locked for today. Try again tomorrow.':'';
+  $('secret-keypad').classList.add('open'); if(!locked) $('secret-keypad-input').focus();
 }
 function closeSecretKeypad(){
   $('secret-keypad').classList.remove('open');
   if(G&&!G.over){ G.keypadOpen=false; G.paused=false; showPause(false); lockPointer(); }
 }
 async function submitSecretKeypad(){
-  if(!(await secretAccessMatches($('secret-keypad-input').value))){ $('secret-keypad-error').textContent='Access denied.'; return; }
+  if(secretKeypadLocked()){
+    $('secret-keypad-error').textContent='Keypad locked for today. Try again tomorrow.'; return;
+  }
+  if(!(await secretAccessMatches($('secret-keypad-input').value))){
+    save.secretKeypadDay=secretDayKey(); save.secretKeypadFails=Math.min(3,(save.secretKeypadFails||0)+1); persist();
+    $('secret-keypad-error').textContent=save.secretKeypadFails>=3?'Keypad locked for today. Try again tomorrow.':`Access denied. ${3-save.secretKeypadFails} attempt${3-save.secretKeypadFails===1?'':'s'} remaining today.`;
+    if(save.secretKeypadFails>=3){ $('secret-keypad-input').disabled=true; $('secret-keypad-submit').disabled=true; }
+    return;
+  }
   const z=secretBunker(); if(z) z.unlocked=true;
   closeSecretKeypad(); sfx('buy');
 }
